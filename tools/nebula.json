@@ -1,0 +1,24 @@
+{
+  "apps": [
+
+    {
+      "name" : "app1",
+      "git"  : "https://github.com/anticoders/app1.git",
+      "env"  : {
+        "MONGO_URL" : "",
+        "ROOT_URL"  : ""
+      }
+    },
+
+    {
+      "name" : "app2",
+      "git"  : "https://github.com/anticoders/app2.git",
+      "env"  : {
+        "MONGO_URL" : "",
+        "ROOT_URL"  : ""
+      }
+    }
+
+  ]
+
+}

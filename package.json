@@ -1,0 +1,37 @@
+{
+  "name": "nebula",
+  "version": "0.0.0",
+  "description": "Meteor hosting solution",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/anticoders/nebula.git"
+  },
+  "keywords": [
+    "meteor",
+    "cloud",
+    "nebula",
+    "hosting",
+    "forever"
+  ],
+  "author": "apendua",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/anticoders/nebula/issues"
+  },
+  "homepage": "https://github.com/anticoders/nebula",
+  "dependencies": {
+    "colors": "^0.6.2",
+    "commander": "^2.3.0",
+    "mkdirp": "^0.5.0"
+  },
+  "devDependencies": {
+    "mocha": "^1.21.4"
+  }
+}
