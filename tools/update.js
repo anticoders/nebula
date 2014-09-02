@@ -13,11 +13,19 @@ var program = commander
   .option('-c, --config <relpath>', 'config file', 'nebula.json')
   .parse(process.argv);
 
+var pathToSource = path.join(process.env.HOME, '.nebula', 'source');
+var pathToBuilds = path.join(process.env.HOME, '.nebula', 'builds');
+var pathToAssets = path.join(process.env.HOME, '.nebula', 'assets'); // these files should have versions
+
+mkdirp.sync(pathToSource);
+mkdirp.sync(pathToAssets);
+mkdirp.sync(pathToBuilds);
+
 var configJson = {};
 var configJsonPath = path.resolve(program.config);
 
 var configLock = {};
-var configLockPath = path.join(process.env.HOME, '.nebula', 'nebula.lock');
+var configLockPath = path.join(pathToAssets, 'nebula.lock');
 
 if (fs.existsSync(configJsonPath)) {
   configJson = JSON.parse(fs.readFileSync(configJsonPath).toString('utf8'));
@@ -26,14 +34,6 @@ if (fs.existsSync(configJsonPath)) {
 if (fs.existsSync(configLockPath)) {
   configLock = JSON.parse(fs.readFileSync(configLockPath).toString('utf8'));
 }
-
-var pathToSource = path.join(process.env.HOME, '.nebula', 'source');
-var pathToBuilds = path.join(process.env.HOME, '.nebula', 'builds');
-var pathToAssets = path.join(process.env.HOME, '.nebula', 'assets'); // these files should have versions
-
-mkdirp.sync(pathToSource);
-mkdirp.sync(pathToAssets);
-mkdirp.sync(pathToBuilds);
 
 // make sure the asset repository is initialized
 if (!fs.existsSync(path.join(pathToAssets, '.git'))) {
@@ -49,8 +49,9 @@ if (!fs.existsSync(path.join(pathToAssets, '.git'))) {
 // TODO: make sure that app names are unique
 
 Fiber(function () {
-
   var fiber = Fiber.current;
+
+  //throw new Error("LOL");
 
   Promise.all(
     Object.keys(configJson.apps).map(function (name) {
@@ -69,14 +70,24 @@ Fiber(function () {
     })
   ).then(function () {
     fiber.run();
+  }, function (error) {
+    fiber.throwInto(error);
+  }).catch(function (error) {
+    console.error(error.stack.red);
   });
 
   Fiber.yield();
 
+  console.log('writing to file ...');
   fs.writeFileSync(configLockPath, JSON.stringify(configJson, undefined, 2));
 
-}).run();
+  exec("git add nebula.lock && git commit -a -m 'updated assets'", { cwd: pathToAssets }, function () {
+    fiber.run();
+  });
 
+  Fiber.yield();
+
+}).run();
 
 function either (first) {
   return {
