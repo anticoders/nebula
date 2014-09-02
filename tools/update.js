@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+var handlebars = require('handlebars');
 var commander = require('commander');
 var Promise = require('es6-promise').Promise;
 var mkdirp = require('mkdirp');
@@ -16,6 +17,12 @@ var program = commander
 var pathToSource = path.join(process.env.HOME, '.nebula', 'source');
 var pathToBuilds = path.join(process.env.HOME, '.nebula', 'builds');
 var pathToAssets = path.join(process.env.HOME, '.nebula', 'assets'); // these files should have versions
+
+var scripts = [ "build.sh", "pull.sh", "respawn.sh", "upstart.conf" ].map(function (name) {
+  return { name: name,
+    template: handlebars.compile(fs.readFileSync(path.join('templates', name)).toString('utf8')),
+  };
+});
 
 mkdirp.sync(pathToSource);
 mkdirp.sync(pathToAssets);
@@ -34,6 +41,8 @@ if (fs.existsSync(configJsonPath)) {
 if (fs.existsSync(configLockPath)) {
   configLock = JSON.parse(fs.readFileSync(configLockPath).toString('utf8'));
 }
+
+var listOfNames = Object.keys(configJson.apps);
 
 // make sure the asset repository is initialized
 if (!fs.existsSync(path.join(pathToAssets, '.git'))) {
@@ -54,7 +63,7 @@ Fiber(function () {
   //throw new Error("LOL");
 
   Promise.all(
-    Object.keys(configJson.apps).map(function (name) {
+    listOfNames.map(function (name) {
       return new Promise(function (resolve, reject) {
         var app = configJson.apps[name];
         console.log(name.cyan + ' -> ' + app.git.yellow);
@@ -78,10 +87,38 @@ Fiber(function () {
 
   Fiber.yield();
 
+  var lastFreePort = 3000;
+
+  listOfNames.forEach(function (name) {
+    var app = configJson.apps[name];
+
+    app.port = lastFreePort++;
+    app.name = name;
+
+    app.pathToAssets = path.join(pathToAssets, name);
+    app.pathToSource = path.join(pathToSource, name);
+    app.pathToBuilds = path.join(pathToBuilds, name);
+
+    mkdirp.sync(app.pathToAssets);
+    
+    // environment variables
+    fs.writeFileSync(path.join(app.pathToAssets, 'variables'), Object.keys(app.env).map(function (key) {
+      return key + '=' + JSON.stringify(app.env[key]);
+    }).join('\n'));
+
+    scripts.forEach(function (script) {
+      fs.writeFileSync(path.join(app.pathToAssets, script.name), script.template(app));
+      if (/\.sh/.test(script.name)) {
+        fs.chmodSync(path.join(app.pathToAssets, script.name), "744");
+      }
+    });
+
+  });
+
   console.log('writing to file ...');
   fs.writeFileSync(configLockPath, JSON.stringify(configJson, undefined, 2));
 
-  exec("git add nebula.lock && git commit -a -m 'updated assets'", { cwd: pathToAssets }, function () {
+  exec("git add nebula.lock " + listOfNames.join(' ') + " && git commit -a -m 'updated assets'", { cwd: pathToAssets }, function () {
     fiber.run();
   });
 
