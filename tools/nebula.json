@@ -1,24 +1,21 @@
 {
-  "apps": [
-
-    {
-      "name" : "app1",
-      "git"  : "https://github.com/anticoders/app1.git",
-      "env"  : {
+  "apps": {
+    "app1": {
+      "git" : "https://github.com/anticoders/impact-demo-generic.git",
+      "env" : {
+        "METEOR_SETTINGS" : {
+          "public": {}
+        },
         "MONGO_URL" : "",
         "ROOT_URL"  : ""
       }
     },
-
-    {
-      "name" : "app2",
-      "git"  : "https://github.com/anticoders/app2.git",
-      "env"  : {
+    "app2": {
+      "git" : "https://github.com/anticoders/impact-demo-generic.git",
+      "env" : {
         "MONGO_URL" : "",
         "ROOT_URL"  : ""
       }
     }
-
-  ]
-
+  }
 }
