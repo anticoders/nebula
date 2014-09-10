@@ -35,7 +35,8 @@
     "es6-promise": "^1.0.0",
     "fibers": "^1.0.2",
     "handlebars": "^2.0.0",
-    "mkdirp": "^0.5.0"
+    "mkdirp": "^0.5.0",
+    "ssh2": "^0.3.6"
   },
   "devDependencies": {
     "mocha": "^1.21.4"

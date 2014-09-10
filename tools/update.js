@@ -12,6 +12,7 @@ var fs = require('fs');
 
 module.exports = function update (configJsonPath, prefix) {
 
+  // TODO: use this prefix in place of hardcoded "nebula"
   prefix = prefix || 'nebula';
 
   var pathToSource = path.join(process.env.HOME, '.nebula', 'source');

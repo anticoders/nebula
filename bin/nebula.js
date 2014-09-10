@@ -2,7 +2,7 @@
 
 var program = require('commander');
 var update = require('../tools/update');
-//var deploy = require('../tools/deploy');
+var deploy = require('../tools/deploy');
 var colors = require('colors');
 var path = require('path');
 var fs = require('fs');
@@ -15,7 +15,7 @@ program
   .command('deploy')
   .description('deploy project')
   .action(function () {
-    console.log('deploying'.green);
+    deploy(this.config, 'nebula');
   });
 
 program
@@ -23,6 +23,13 @@ program
   .description('update config')
   .action(function () {
     update(this.config, 'nebula');
+  });
+
+program
+  .command('restart')
+  .description('restart server')
+  .action(function () {
+    //restart(this.config, 'nebula');
   });
 
 program.parse(process.argv)

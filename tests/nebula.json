@@ -1,4 +1,8 @@
 {
+  "host": "192.168.33.10",
+  "port": 22,
+  "user": "nebula",
+  "pass": "secret",
   "apps": {
     "app1": {
       "git" : "https://github.com/anticoders/impact-demo-generic.git",
