@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
 var program = require('commander');
+var update = require('../tools/update');
+//var deploy = require('../tools/deploy');
 var colors = require('colors');
 var path = require('path');
 var fs = require('fs');
@@ -20,7 +22,7 @@ program
   .command('update')
   .description('update config')
   .action(function () {
-    console.log('updating'.green);
+    update(this.config, 'nebula');
   });
 
 program.parse(process.argv)
