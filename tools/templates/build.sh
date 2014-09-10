@@ -14,10 +14,10 @@ then
     rm bundle.tar.gz
     echo "rename bundle -> ${HASH}"
     mv bundle ${HASH}
+    cd ${HASH}/programs/server && npm install
   )
 fi
 
 cd {{pathToBuilds}}
 rm -f latest
 ln -s ${HASH} latest
-
