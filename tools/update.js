@@ -127,7 +127,7 @@ module.exports = function update (configJsonPath, prefix) {
     console.log('saving config files ...');
 
     // lock file
-    configJson.harpoxyRestartScript = pathToHaproxyRestartScript;
+    configJson.haproxyRestartScript = pathToHaproxyRestartScript;
     fs.writeFileSync(configLockPath, JSON.stringify(configJson, undefined, 2));
 
     // haproxy config
