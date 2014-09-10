@@ -101,6 +101,7 @@ module.exports = function update (configJsonPath, prefix) {
 
       app.port = lastFreePort++;
       app.name = name;
+      app.user = configJson.user;
 
       app.pathToAssets = path.join(pathToAssets, name);
       app.pathToSource = path.join(pathToSource, name);
@@ -113,6 +114,7 @@ module.exports = function update (configJsonPath, prefix) {
         return key + '=' + JSON.stringify(app.env[key]);
       }).join('\n'));
 
+      // scripts from templates
       scripts.forEach(function (script) {
         fs.writeFileSync(path.join(app.pathToAssets, script.name), script.template(app));
         if (/\.sh/.test(script.name)) {
@@ -139,6 +141,8 @@ module.exports = function update (configJsonPath, prefix) {
     fs.writeFileSync(pathToHaproxyRestartScript, haproxyRestartScriptTemplate({
       pathToHaproxyConfig: pathToHaproxyConfig
     }));
+
+    fs.chmodSync(pathToHaproxyRestartScript, "744");
 
     exec("git add nebula.lock " + listOfNames.join(' ') + " && git commit -a -m 'updated assets'", { cwd: pathToAssets }, function () {
       fiber.run();
