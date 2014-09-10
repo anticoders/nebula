@@ -111,7 +111,7 @@ module.exports = function update (configJsonPath, prefix) {
       
       // environment variables
       fs.writeFileSync(path.join(app.pathToAssets, 'variables'), Object.keys(app.env).map(function (key) {
-        return key + '=' + JSON.stringify(app.env[key]);
+        return key + '=' + (typeof app.env[key] === 'object' ? JSON.stringify(app.env[key]) : app.env[key].toString());
       }).join('\n'));
 
       // scripts from templates
