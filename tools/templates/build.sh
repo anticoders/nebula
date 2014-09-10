@@ -4,15 +4,15 @@ HASH=`git rev-parse --short {{sha}}`
 
 if [ ! -e {{pathToBuilds}}/${HASH} ];
 then
-  echo -e "creating meteor bundle"
+  echo "creating meteor bundle"
   mkdir -p {{pathToBuilds}}
   mrt install && meteor bundle {{pathToBuilds}}/bundle.tar.gz
   (
     cd {{pathToBuilds}}
-    echo -e "extracting tar"
+    echo "extracting tar"
     tar -zxf bundle.tar.gz
     rm bundle.tar.gz
-    echo -e "rename bundle -> ${HASH}"
+    echo "rename bundle -> ${HASH}"
     mv bundle ${HASH}
   )
 fi

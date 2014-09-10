@@ -2,6 +2,7 @@ var Connection = require('ssh2');
 var Promise = require('es6-promise').Promise;
 var colors = require('colors');
 var exec = require('child_process').exec;
+var spawn = require('child_process').spawn;
 var path = require('path');
 var fs = require('fs');
 
@@ -23,33 +24,34 @@ module.exports = function reload (configLockPath) {
       var pathToBuildScript   = path.join(app.pathToAssets, 'build.sh');
       var pathToRespawnScript = path.join(app.pathToAssets, 'respawn.sh');
 
-      return new Promise(function (resolve, reject) {
-        console.log('pulling the latest version from repo'.blue);
-        exec(pathToPullScript, either(reject).or(function (stdout, stderr) {
-          console.log('building meteor app'.blue);
-          process.stdout.write(stdout.green); process.stdout.write(stderr.red);
-          exec(pathToBuildScript, either(reject).or(function (stdout, stderr) {
-            process.stdout.write(stdout.green); process.stdout.write(stderr.red);
-            exec(pathToRespawnScript, either(reject).or(function (stdout) {
-              process.stdout.write(stdout.green); process.stdout.write(stderr.red);
-              console.log(stdout);
-              resolve();
-            }));
-          }));
-        }));
-      });
+
+      return runScriptAsPromise(pathToPullScript)
+        .then(function () {
+          return runScriptAsPromise(pathToBuildScript);
+        })
+        .then(function () {
+          return runScriptAsPromise(pathToRespawnScript);
+        });
+
 
     })
 
   ).then(function () {
-    console.log('restarting haproxy'.blue);
-    exec(configLock.haproxyRestartScript, function (stdout, stderr) {
-      process.stdout.write(stdout.green); process.stdout.write(stderr.red);
-    });
+    return runScriptAsPromise(configLock.haproxyRestartScript);
   }, function (err) {
+    console.log('FAILED'.red);
     console.log(err);
   });
 
+}
+
+function runScriptAsPromise(pathToScrip) {
+  console.log('executing ' + pathToScrip.cyan);
+  return new Promise(function (resolve, reject) {
+    var child = spawn(pathToScrip, [], { stdio: 'inherit' });
+    child.on('error', reject);
+    child.on('exit', resolve);
+  });
 }
 
 function either (first) {
