@@ -1,4 +1,4 @@
-if [[ ! -e {{pathToSource}} ]]
+if [ ! -e {{pathToSource}} ];
 then
   git clone {{git}} {{pathToSource}}
 fi

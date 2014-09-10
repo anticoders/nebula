@@ -2,7 +2,7 @@
 cd {{pathToSource}}
 HASH=`git rev-parse --short {{sha}}`
 
-if [[ ! -e {{pathToBuilds}}/${HASH} ]]
+if [ ! -e {{pathToBuilds}}/${HASH} ];
 then
   echo -e "creating meteor bundle"
   mkdir -p {{pathToBuilds}}
