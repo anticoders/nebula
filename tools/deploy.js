@@ -22,7 +22,9 @@ module.exports = function deploy (configJsonPath) {
       }).stderr.on('data', function(data) {
         process.stderr.write(data);
       });
-      stream.write('sudo npm install -g meteor-nebula\n');
+      stream.write('cat <<EOF > nebula.json\n');
+      stream.write(JSON.stringify(configJson, undefined, 2));
+      stream.write('\nEOF\n');
       stream.write('nebula update\n');
       stream.write('nebula restart\n');
       stream.end('exit\n');
