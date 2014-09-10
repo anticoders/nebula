@@ -11,7 +11,7 @@
           "public": {}
         },
         "MONGO_URL" : "mongod://localhost:27017/app1",
-        "ROOT_URL"  : "localhost:8080"
+        "ROOT_URL"  : "http://localhost:8080"
       },
       "domain": "localhost"
     },
@@ -19,7 +19,7 @@
       "git" : "https://github.com/anticoders/impact-demo-generic.git",
       "env" : {
         "MONGO_URL" : "mongod://localhost:27017/app2",
-        "ROOT_URL"  : "127.0.0.1:8080"
+        "ROOT_URL"  : "http://127.0.0.1:8080"
       },
       "domain": "127.0.0.1"
     }
