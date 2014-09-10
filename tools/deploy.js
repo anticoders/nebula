@@ -26,7 +26,7 @@ module.exports = function deploy (configJsonPath) {
       stream.write(JSON.stringify(configJson, undefined, 2));
       stream.write('\nEOF\n');
       stream.write('nebula update\n');
-      stream.write('nebula restart\n');
+      stream.write('nebula reload\n');
       stream.end('exit\n');
     });
 

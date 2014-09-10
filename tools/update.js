@@ -20,6 +20,7 @@ module.exports = function update (configJsonPath, prefix) {
   var pathToAssets = path.join(process.env.HOME, '.nebula', 'assets'); // these files should have versions
 
   var pathToHaproxyConfig = path.join(process.env.HOME, '.nebula', 'assets', 'haproxy.cfg');
+  var pathToHaproxyRestartScript = path.join(process.env.HOME, '.nebula', 'assets', 'haproxy-restart.sh');
 
   var scripts = [ "build.sh", "pull.sh", "respawn.sh", "upstart.conf" ].map(function (name) {
     return { name: name,
@@ -28,6 +29,8 @@ module.exports = function update (configJsonPath, prefix) {
   });
 
   var haproxyConfigTemplate = handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'haproxy.cfg')).toString('utf8'));
+  var haproxyRestartScriptTemplate =
+    handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'haproxy-restart.sh')).toString('utf8'));
 
   mkdirp.sync(pathToSource);
   mkdirp.sync(pathToAssets);
@@ -122,6 +125,7 @@ module.exports = function update (configJsonPath, prefix) {
     console.log('saving config files ...');
 
     // lock file
+    configJson.harpoxyRestartScript = pathToHaproxyRestartScript;
     fs.writeFileSync(configLockPath, JSON.stringify(configJson, undefined, 2));
 
     // haproxy config
@@ -129,6 +133,11 @@ module.exports = function update (configJsonPath, prefix) {
       apps: Object.keys(configJson.apps).map(function (name) { 
         return configJson.apps[name];
       })
+    }));
+
+    // haproxy restart script
+    fs.writeFileSync(pathToHaproxyRestartScript, haproxyRestartScriptTemplate({
+      pathToHaproxyConfig: pathToHaproxyConfig
     }));
 
     exec("git add nebula.lock " + listOfNames.join(' ') + " && git commit -a -m 'updated assets'", { cwd: pathToAssets }, function () {
