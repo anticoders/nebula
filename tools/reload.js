@@ -46,6 +46,8 @@ module.exports = function reload (configLockPath) {
     exec(configLock.haproxyRestartScript, function (stdout, stderr) {
       process.stdout.write(stdout.green); process.stdout.write(stderr.red);
     });
+  }, function (err) {
+    console.log(err);
   });
 
 }
