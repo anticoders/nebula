@@ -18,11 +18,15 @@ var pathToSource = path.join(process.env.HOME, '.nebula', 'source');
 var pathToBuilds = path.join(process.env.HOME, '.nebula', 'builds');
 var pathToAssets = path.join(process.env.HOME, '.nebula', 'assets'); // these files should have versions
 
+var pathToHaproxyConfig = path.join(process.env.HOME, '.nebula', 'assets', 'haproxy.cfg');
+
 var scripts = [ "build.sh", "pull.sh", "respawn.sh", "upstart.conf" ].map(function (name) {
   return { name: name,
     template: handlebars.compile(fs.readFileSync(path.join('templates', name)).toString('utf8')),
   };
 });
+
+var haproxyConfigTemplate = handlebars.compile(fs.readFileSync(path.join('templates', 'haproxy.cfg')).toString('utf8'));
 
 mkdirp.sync(pathToSource);
 mkdirp.sync(pathToAssets);
@@ -115,8 +119,17 @@ Fiber(function () {
 
   });
 
-  console.log('writing to file ...');
+  console.log('saving config files ...');
+
+  // lock file
   fs.writeFileSync(configLockPath, JSON.stringify(configJson, undefined, 2));
+
+  // haproxy config
+  fs.writeFileSync(pathToHaproxyConfig, haproxyConfigTemplate({
+    apps: Object.keys(configJson.apps).map(function (name) { 
+      return configJson.apps[name];
+    })
+  }));
 
   exec("git add nebula.lock " + listOfNames.join(' ') + " && git commit -a -m 'updated assets'", { cwd: pathToAssets }, function () {
     fiber.run();
