@@ -3,10 +3,20 @@ nebula
 
 A tool for deploying meteor apps.
 
-To install on your server type:
+installation
+------------
+
+Start by installing on your development machine:
+```
+sudo npm install -g meteor-nebula
+```
+Then install it on your server:
 ```
 sudo curl https://gist.githubusercontent.com/apendua/46bcbfb403a8bb5b2ce5/raw/install-nebula.sh | sh
 ```
+
+configuration
+-------------
 
 An example config file may look like this:
 ```javascript
