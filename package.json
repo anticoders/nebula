@@ -1,7 +1,7 @@
 {
   "name": "meteor-nebula",
   "version": "0.0.1",
-  "description": "Meteor hosting solution",
+  "description": "deploy several meteorites at once",
   "main": "index.js",
   "directories": {
     "test": "tests"
