@@ -8,7 +8,7 @@ installation
 
 Start by installing on your development machine:
 ```
-sudo npm install -g meteor-nebula
+npm install -g meteor-nebula
 ```
 Then install it on your server:
 ```
@@ -52,14 +52,4 @@ An example config file may look like this:
 ```
 save it to `nebula.json` and run `nebula deploy` in the same directory.
 
-random stuff
-------------
 
-If you don't want to enter the sudo password all the time:
-```
-sudo visudo
-```
-and add the following line to the end of file (replacing with the correct user name of course):
-```
-user ALL=(ALL) NOPASSWD: ALL
-```
