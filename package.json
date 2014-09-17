@@ -30,6 +30,7 @@
   },
   "homepage": "https://github.com/anticoders/nebula",
   "dependencies": {
+    "chalk": "^0.5.1",
     "colors": "^0.6.2",
     "commander": "^2.3.0",
     "es6-promise": "^1.0.0",
