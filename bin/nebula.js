@@ -16,6 +16,7 @@ program
   .version('0.0.1')
   .option('-c, --config <relpath>', 'config file [default: nebula.json]', 'nebula.json')
   .option('-l, --config-lock <relpath>', 'config file [default: nebula.lock]', defaultLockFilePath)
+  .option('-o, --output <relpath>', 'path to save output data');
 
 program
   .command('deploy [name]')

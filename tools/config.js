@@ -92,9 +92,6 @@ module.exports = function config (name, options) {
     return;
   }
 
-  console.log("\u2714 using config:".green);
-  console.log(JSON.stringify(config, undefined, 2).magenta);
-
   var pathToIdsFile = path.join('.nebula', 'nebula.json');
   if (!fs.existsSync(pathToIdsFile)) {
     fs.writeFileSync(pathToIdsFile, "{}");
@@ -111,6 +108,14 @@ module.exports = function config (name, options) {
     console.log('we have added a unique id for ' + config.name + ' app to ' + pathToIdsFile + ' file');
     console.log('you should generally commit this file to your repository');
   }
+
+  if (options.output) {
+    fs.writeFileSync(options.output, JSON.stringify(config, undefined, 2) + '\n');
+  } else {
+    console.log("\u2714 using config:".green);
+    console.log(JSON.stringify(config, undefined, 2).magenta);
+  }
+
 
   return config;
 }
