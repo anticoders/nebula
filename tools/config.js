@@ -2,27 +2,58 @@
 var ObjectID = require('mongodb').ObjectID;
 var handlebars = require('handlebars');
 var colors = require('colors');
+var mkdirp = require('mkdirp');
 var yaml = require('js-yaml');
 var path = require('path');
 var fs = require('fs');
 
 module.exports = function config (name, options) {
 
-  var defaultFileName = 'default.yml';
-  var defaultTemplate;
-  var defaultContents;
-  var config;
-  var ruler;
-
-  if (!fs.existsSync('.meteor')) {
-    console.log("\u26A0 it looks like you're not in a valid meteor project directory".yellow);
-  }
+  //if (!fs.existsSync('.meteor')) {
+  //  console.log("\u26A0 it looks like you're not in a valid meteor project directory".yellow);
+  //}
 
   if (!fs.existsSync('.nebula')) {
     fs.mkdirSync('.nebula');
   }
 
+  var pathToConfig = path.join('.nebula', 'config');
+  var settings = options.settings || findSettingsByName(name);
+
+  if (options.settings && name) {
+    console.log('settings are provided explicitly, igoring name'.yellow);
+  }
+
+  if (!settings) {
+    console.log("\u00D7 no settings provided".red);
+    return;
+  }
+  
+  if (!settings.id) {
+    console.log('settings id must be provided'.red);
+    return;
+  }
+
+  console.log("\u2714 using settings:".green);
+  console.log(JSON.stringify(settings, undefined, 2).magenta);
+
+  if (options.save) {
+    mkdirp.sync(pathToConfig);
+    fs.writeFileSync(path.join(pathToConfig, settings.id + '.json'), JSON.stringify(settings, undefined, 2) + '\n');
+  }
+
+  return settings;
+}
+
+
+function findSettingsByName (name) {
+
   var listOfFiles = fs.readdirSync('.nebula').filter(function (file) { return path.extname(file) === '.yml' });
+  var defaultFileName = 'default.yml';
+  var defaultTemplate;
+  var defaultContents;
+  var settings;
+  var ruler;
 
   if (listOfFiles.length === 0) {
     // drop a default file
@@ -41,6 +72,9 @@ module.exports = function config (name, options) {
 
     fs.writeFileSync(path.join('.nebula', defaultFileName), defaultContents);
     fs.writeFileSync(path.join('.nebula', 'README.md'), fs.readFileSync(path.join(__dirname, 'templates', 'README.md')));
+    fs.writeFileSync(path.join('.nebula', '.gitignore'), [
+      "assets", "builds", "config", "source"
+    ].join('\n'));
 
     ruler = "============ " + path.join(".nebula/", defaultFileName) + " ============";
 
@@ -72,21 +106,21 @@ module.exports = function config (name, options) {
   }
 
   if (name) {
-    config = listOfFiles.filter(function (file) {
+    settings = listOfFiles.filter(function (file) {
       return name === file.name;
     })[0];
-    if (!config) {
+    if (!settings) {
       console.log("config file ".red + name.red + " does not exist".red);
       console.log("valid choices are:");
       console.log(listOfOptionsAsString());
       return;
     }
   } else {
-    config = listOfFiles[0];
+    settings = listOfFiles[0];
   }
 
   try {
-    config = yaml.safeLoad(fs.readFileSync(config.path, 'utf8'));
+    settings = yaml.safeLoad(fs.readFileSync(settings.path, 'utf8'));
   } catch(err) {
     console.log(err.toString().red);
     return;
@@ -99,23 +133,19 @@ module.exports = function config (name, options) {
   
   var IDs = JSON.parse(fs.readFileSync(pathToIdsFile, 'utf8'));
 
-  config.id = IDs[config.name] || new ObjectID();
+  settings.id = settings.id || IDs[settings.name] || new ObjectID();
   
-  if (!IDs[config.name]) {
-    IDs[config.name] = config.id;
+  if (!IDs[settings.name]) {
+    IDs[settings.name] = settings.id;
     fs.writeFileSync(pathToIdsFile, JSON.stringify(IDs, undefined, 2));
 
-    console.log('we have added a unique id for ' + config.name + ' app to ' + pathToIdsFile + ' file');
+    console.log('we have added a unique id for ' + settings.name + ' app to ' + pathToIdsFile + ' file');
     console.log('you should generally commit this file to your repository');
   }
 
-  if (options.output) {
-    fs.writeFileSync(options.output, JSON.stringify(config, undefined, 2) + '\n');
-  } else {
-    console.log("\u2714 using config:".green);
-    console.log(JSON.stringify(config, undefined, 2).magenta);
-  }
+  return settings;
 
-
-  return config;
 }
+
+
+

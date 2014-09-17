@@ -16,7 +16,8 @@ program
   .version('0.0.1')
   .option('-c, --config <relpath>', 'config file [default: nebula.json]', 'nebula.json')
   .option('-l, --config-lock <relpath>', 'config file [default: nebula.lock]', defaultLockFilePath)
-  .option('-o, --output <relpath>', 'path to save output data');
+  .option('-f, --file <path>', 'load config from a specified file')
+  .option('-s, --save', 'save config file to nebula cache');
 
 program
   .command('deploy [name]')
@@ -32,7 +33,34 @@ program
   .command('config [name]')
   .description('configure project')
   .action(function (name) {
-    config(name, this);
+    var buffer = "";
+    var self = this;
+
+    function consume(err, data) {
+      if (!err) {
+        self.settings = tryJSONorYAML(data ? data.toString() : buffer);
+        if (self.settings) {
+          config(null, self);
+        } else {
+          console.log('wrong data format'.red);
+        }
+      } else {
+        console.log(err.toString().red);
+      }
+    }
+
+    if (this.file) {
+      if (this.file === '-') {
+        process.stdin.on('data', function (data) {
+          buffer += data.toString();
+        });
+        process.stdin.on('end', consume);
+      } else {
+        fs.readFile(this.file, consume);
+      }
+    } else {
+      config(name, this);
+    }
   });
 
 program
@@ -50,3 +78,15 @@ program
   });
 
 program.parse(process.argv)
+
+function tryJSONorYAML(string) {
+  try {
+    return JSON.parse(string);
+  } catch (err1) {
+    try {
+      return yaml.safeLoad(string);
+    } catch (err2) {
+      return;
+    }
+  }
+}
