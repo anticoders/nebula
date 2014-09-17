@@ -16,8 +16,8 @@ module.exports = function deploy (settings) {
       }).stderr.on('data', function(data) {
         process.stderr.write(data);
       });
-      stream.write('cat <<EOF > nebula.json\n');
-      stream.write(JSON.stringify(configJson, undefined, 2));
+      stream.write("cat <<EOF | nebula config --save --file -");
+      stream.write(JSON.stringify(settings, undefined, 2));
       stream.write('\nEOF\n');
       //stream.write('nebula update\n');
       //stream.write('nebula reload\n');

@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 var handlebars = require('handlebars');
 var commander = require('commander');
 var Promise = require('es6-promise').Promise;
@@ -15,6 +13,7 @@ module.exports = function update (configJsonPath, prefix) {
   // TODO: use this prefix in place of hardcoded "nebula"
   prefix = prefix || 'nebula';
 
+  var pathToConfig = path.join(process.env.HOME, '.nebula', 'config');
   var pathToSource = path.join(process.env.HOME, '.nebula', 'source');
   var pathToBuilds = path.join(process.env.HOME, '.nebula', 'builds');
   var pathToAssets = path.join(process.env.HOME, '.nebula', 'assets'); // these files should have versions
