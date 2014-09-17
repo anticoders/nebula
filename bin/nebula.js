@@ -4,7 +4,9 @@ var program = require('commander');
 var update = require('../tools/update');
 var deploy = require('../tools/deploy');
 var reload = require('../tools/reload');
+var config = require('../tools/config');
 var colors = require('colors');
+var yaml = require('js-yaml');
 var path = require('path');
 var fs = require('fs');
 
@@ -16,10 +18,20 @@ program
   .option('-l, --config-lock <relpath>', 'config file [default: nebula.lock]', defaultLockFilePath)
 
 program
-  .command('deploy')
+  .command('deploy [name]')
   .description('deploy project')
-  .action(function () {
-    deploy(this.config, 'nebula');
+  .action(function (name) {
+    var settings = config(name, this);
+    if (settings) {
+      deploy(settings, 'nebula');
+    }
+  });
+
+program
+  .command('config [name]')
+  .description('configure project')
+  .action(function (name) {
+    config(name, this);
   });
 
 program

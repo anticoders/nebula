@@ -1,13 +1,7 @@
 var Connection = require('ssh2');
 var fs = require('fs');
 
-module.exports = function deploy (configJsonPath) {
-
-  var configJson = {};
-
-  if (fs.existsSync(configJsonPath)) {
-    configJson = JSON.parse(fs.readFileSync(configJsonPath).toString('utf8'));
-  }
+module.exports = function deploy (settings) {
 
   var conn = new Connection();
 
@@ -25,16 +19,16 @@ module.exports = function deploy (configJsonPath) {
       stream.write('cat <<EOF > nebula.json\n');
       stream.write(JSON.stringify(configJson, undefined, 2));
       stream.write('\nEOF\n');
-      stream.write('nebula update\n');
-      stream.write('nebula reload\n');
+      //stream.write('nebula update\n');
+      //stream.write('nebula reload\n');
       stream.end('exit\n');
     });
 
   }).connect({
-    username : configJson.user,
-    password : configJson.pass,
-    host     : configJson.host,
-    port     : configJson.port,
+    username : settings.username,
+    password : settings.password,
+    host     : settings.host,
+    port     : settings.port || 22,
   });
 
 }

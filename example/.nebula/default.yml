@@ -1,0 +1,12 @@
+host     : 127.0.0.1
+username : nebula
+password : secret
+
+repository :
+  git : https://github.com/anticoders/nebula.git
+
+name : nebula
+environment :
+  METEOR_SETTINGS : {}
+  MONGO_URL       : mongodb://localhost:27017/nebula
+  ROOT_URL        : http://localhost:3000

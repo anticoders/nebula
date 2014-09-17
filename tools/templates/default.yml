@@ -1,0 +1,15 @@
+host     : {{host}}
+username : {{username}}
+password : {{password}}
+
+repository :
+  git : {{git}}
+  {{#if dir}}
+  dir : {{dir}}
+  {{/if}}
+
+name : nebula
+environment :
+  METEOR_SETTINGS : {}
+  MONGO_URL       : {{MONGO_URL}}
+  ROOT_URL        : {{ROOT_URL}}
