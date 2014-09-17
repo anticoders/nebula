@@ -1,0 +1,17 @@
+host     : 192.168.33.10
+username : nebula
+password : secret
+# path to private key
+# privateKey : ..
+repository :
+  # not required for public repos
+  # username : apendua
+  git : https://github.com/anticoders/impact-demo-generic.git
+  dir : example
+
+name : app1
+environment :
+  METEOR_SETTINGS:
+    public :
+  MONGO_URL : mongodb://localhost:27017/app1
+  ROOT_URL  : http://localhost:8080
