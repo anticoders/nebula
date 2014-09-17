@@ -53,3 +53,13 @@ An example config file may look like this:
 save it to `nebula.json` and run `nebula deploy` in the same directory.
 
 
+
+nebula deploy [config]
+
+The required config does not exist yet. Let's create one.
+
+Config name:
+Host name:
+Username:
+Password:
+Save creds? [Y/n]:

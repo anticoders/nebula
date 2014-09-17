@@ -5,7 +5,9 @@ var update = require('../tools/update');
 var deploy = require('../tools/deploy');
 var reload = require('../tools/reload');
 var config = require('../tools/config');
+var prompt = require('../tools/prompt');
 var colors = require('colors');
+var chalk = require('chalk');
 var yaml = require('js-yaml');
 var path = require('path');
 var fs = require('fs');
@@ -35,6 +37,13 @@ program
   .action(function (name) {
     var buffer = "";
     var self = this;
+
+    //prompt('Config name:', {
+    //  transform   : function (str) { return chalk.cyan(str) },
+    //  placeholder : chalk.red('enter some unique name'),
+    //}, function (result) {
+    //
+    //});
 
     function consume(err, data) {
       if (!err) {
