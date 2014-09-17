@@ -1,5 +1,6 @@
 
-var ObjectID = require('mongodb').ObjectID;
+//var ObjectID = require('mongodb').ObjectID;
+var crypto = require('crypto');
 var handlebars = require('handlebars');
 var colors = require('colors');
 var mkdirp = require('mkdirp');
@@ -133,7 +134,7 @@ function findSettingsByName (name) {
   
   var IDs = JSON.parse(fs.readFileSync(pathToIdsFile, 'utf8'));
 
-  settings.id = settings.id || IDs[settings.name] || new ObjectID();
+  settings.id = settings.id || IDs[settings.name] || randomHexString(8); //|| new ObjectID();
   
   if (!IDs[settings.name]) {
     IDs[settings.name] = settings.id;
@@ -145,6 +146,10 @@ function findSettingsByName (name) {
 
   return settings;
 
+}
+
+function randomHexString(length) {
+  return crypto.randomBytes(length / 2).toString('hex').slice(0, length);
 }
 
 

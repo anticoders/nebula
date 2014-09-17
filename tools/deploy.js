@@ -7,6 +7,8 @@ module.exports = function deploy (settings) {
 
   conn.on('ready', function () {
 
+    // TODO: we can filter out some options from settings file
+
     conn.shell('uptime', function (err, stream) {
       if (err) throw err;
       stream.on('close', function () {
@@ -16,7 +18,7 @@ module.exports = function deploy (settings) {
       }).stderr.on('data', function(data) {
         process.stderr.write(data);
       });
-      stream.write("cat <<EOF | nebula config --save --file -");
+      stream.write("cat <<EOF | nebula config --save --file -\n");
       stream.write(JSON.stringify(settings, undefined, 2));
       stream.write('\nEOF\n');
       //stream.write('nebula update\n');

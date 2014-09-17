@@ -13,13 +13,13 @@ module.exports = function update (configJsonPath, prefix) {
   // TODO: use this prefix in place of hardcoded "nebula"
   prefix = prefix || 'nebula';
 
-  var pathToConfig = path.join(process.env.HOME, '.nebula', 'config');
-  var pathToSource = path.join(process.env.HOME, '.nebula', 'source');
-  var pathToBuilds = path.join(process.env.HOME, '.nebula', 'builds');
-  var pathToAssets = path.join(process.env.HOME, '.nebula', 'assets'); // these files should have versions
+  var pathToConfig = path.resolve(path.join('.nebula', 'config'));
+  var pathToSource = path.resolve(path.join('.nebula', 'source'));
+  var pathToBuilds = path.resolve(path.join('.nebula', 'builds'));
+  var pathToAssets = path.resolve(path.join('.nebula', 'assets')); // these files should have versions
 
-  var pathToHaproxyConfig = path.join(process.env.HOME, '.nebula', 'assets', 'haproxy.cfg');
-  var pathToHaproxyRestartScript = path.join(process.env.HOME, '.nebula', 'assets', 'haproxy-restart.sh');
+  var pathToHaproxyConfig = path.resolve(path.join('.nebula', 'assets', 'haproxy.cfg'));
+  var pathToHaproxyRestartScript = path.resolve(path.join('.nebula', 'assets', 'haproxy-restart.sh'));
 
   var scripts = [ "build.sh", "pull.sh", "respawn.sh", "upstart.conf" ].map(function (name) {
     return { name: name,
@@ -31,18 +31,25 @@ module.exports = function update (configJsonPath, prefix) {
   var haproxyRestartScriptTemplate =
     handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'haproxy-restart.sh')).toString('utf8'));
 
+  mkdirp.sync(pathToConfig);
   mkdirp.sync(pathToSource);
   mkdirp.sync(pathToAssets);
   mkdirp.sync(pathToBuilds);
 
-  var configJson = {};
+  var configJson = { apps: [] };
 
   var configLock = {};
   var configLockPath = path.join(pathToAssets, 'nebula.lock');
 
-  if (fs.existsSync(configJsonPath)) {
-    configJson = JSON.parse(fs.readFileSync(configJsonPath).toString('utf8'));
-  }
+  fs.readdirSync(pathToConfig).filter(function (file) {
+    return path.extname(file) === '.json';
+  }).forEach(function (file) {
+    configJson.apps[path.basename(file, '.json')] = JSON.parse(fs.readFileSync(path.join(pathToConfig, file), 'utf8'));
+  });
+
+  //if (fs.existsSync(configJsonPath)) {
+  //  configJson = JSON.parse(fs.readFileSync(configJsonPath).toString('utf8'));
+  //}
 
   if (fs.existsSync(configLockPath)) {
     configLock = JSON.parse(fs.readFileSync(configLockPath).toString('utf8'));
@@ -72,8 +79,8 @@ module.exports = function update (configJsonPath, prefix) {
       listOfNames.map(function (name) {
         return new Promise(function (resolve, reject) {
           var app = configJson.apps[name];
-          console.log(name.cyan + ' -> ' + app.git.yellow);
-          exec('git ls-remote ' + app.git, { cwd: null }, either(reject).or(function (stdout) {
+          console.log(name.cyan + ' -> ' + app.repository.git.yellow);
+          exec('git ls-remote ' + app.repository.git, { cwd: null }, either(reject).or(function (stdout) {
             var match = /^([\da-f]+)\s+HEAD$/m.exec(stdout);
             if (match) {
               configJson.apps[name].sha = match[1];
@@ -95,22 +102,22 @@ module.exports = function update (configJsonPath, prefix) {
 
     var lastFreePort = 3000;
 
-    listOfNames.forEach(function (name) {
-      var app = configJson.apps[name];
+    listOfNames.forEach(function (id) {
+      var app = configJson.apps[id];
 
       app.port = lastFreePort++;
-      app.name = name;
-      app.user = configJson.user;
+      app.hash = app.id;
+      app.user = process.env.USER;
 
-      app.pathToAssets = path.join(pathToAssets, name);
-      app.pathToSource = path.join(pathToSource, name);
-      app.pathToBuilds = path.join(pathToBuilds, name);
+      app.pathToAssets = path.join(pathToAssets, id);
+      app.pathToSource = path.join(pathToSource, id);
+      app.pathToBuilds = path.join(pathToBuilds, id);
 
       mkdirp.sync(app.pathToAssets);
       
       // environment variables
-      fs.writeFileSync(path.join(app.pathToAssets, 'variables'), Object.keys(app.env).map(function (key) {
-        return key + '=' + (typeof app.env[key] === 'object' ? JSON.stringify(app.env[key]) : app.env[key].toString());
+      fs.writeFileSync(path.join(app.pathToAssets, 'variables'), Object.keys(app.environment).map(function (key) {
+        return key + '=' + (typeof app.environment[key] === 'object' ? JSON.stringify(app.environment[key]) : app.environment[key].toString());
       }).join('\n'));
 
       // scripts from templates
