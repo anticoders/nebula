@@ -1,11 +1,7 @@
 
+var ObjectID = require('mongodb').ObjectID;
 var handlebars = require('handlebars');
-var commander = require('commander');
-var Promise = require('es6-promise').Promise;
-var mkdirp = require('mkdirp');
 var colors = require('colors');
-var Fiber = require('fibers');
-var exec = require('child_process').exec;
 var yaml = require('js-yaml');
 var path = require('path');
 var fs = require('fs');
@@ -44,6 +40,7 @@ module.exports = function config (name, options) {
     });
 
     fs.writeFileSync(path.join('.nebula', defaultFileName), defaultContents);
+    fs.writeFileSync(path.join('.nebula', 'README.md'), fs.readFileSync(path.join(__dirname, 'templates', 'README.md')));
 
     ruler = "============ " + path.join(".nebula/", defaultFileName) + " ============";
 
@@ -97,6 +94,23 @@ module.exports = function config (name, options) {
 
   console.log("\u2714 using config:".green);
   console.log(JSON.stringify(config, undefined, 2).magenta);
+
+  var pathToIdsFile = path.join('.nebula', 'nebula.json');
+  if (!fs.existsSync(pathToIdsFile)) {
+    fs.writeFileSync(pathToIdsFile, "{}");
+  }
+  
+  var IDs = JSON.parse(fs.readFileSync(pathToIdsFile, 'utf8'));
+
+  config.id = IDs[config.name] || new ObjectID();
+  
+  if (!IDs[config.name]) {
+    IDs[config.name] = config.id;
+    fs.writeFileSync(pathToIdsFile, JSON.stringify(IDs, undefined, 2));
+
+    console.log('we have added a unique id for ' + config.name + ' app to ' + pathToIdsFile + ' file');
+    console.log('you should generally commit this file to your repository');
+  }
 
   return config;
 }
