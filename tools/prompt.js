@@ -4,35 +4,59 @@ var keypress = require('keypress');
 
 keypress(process.stdin);
 
-module.exports = function(title, options, callback) {
+module.exports = function form() {}
 
-  var self = this, buffer = "", index = 0;
+module.exports.input = function (options, callback) {
 
-  if (arguments.length < 3) {
-    callback = options; options = {};
+  var mask        = options.mask;
+  var size        = options.size;
+  var space       = options.space || " ";
+  var value       = chalk.stripColor(options.value || "");
+  var placeholder = chalk.stripColor(options.placeholder || "");
+
+  var _transform = options.transform || function (str) {
+    return mask ? nTimes(str.length, mask[0]) : str;
   }
+
+  if (size && placeholder) {
+    placeholder = placeholder.substr(0, size);
+  }
+
+  if (size && value) {
+    value = value.substr(0, size);
+  }
+
+  var buffer = value || "";
+  var index  = buffer.length;
 
   function nTimes(n, c) {
     return new Array(n + 1).join(c);
   }
 
-  options.transform = options.transform || function (str) {
-    return options.mask ? nTimes(str.length, str.mask[0]) : str;
+  function transform(str) {
+    return _transform(str).replace(/ /g, space);
   }
 
-  function showPlaceholder() {
-    options.placeholder && process.stdout.write(options.placeholder + 
-      nTimes(chalk.stripColor(options.placeholder).length, '\b'));
+  function showPlaceholder(placeholder, style) {
+    style = style || function (str) { return str };
+    placeholder && process.stdout.write(style(placeholder) + nTimes(placeholder.length, '\b'));
   }
 
-  function clearPlaceholder() {
-    options.placeholder && process.stdout.write(
-      nTimes(chalk.stripColor(options.placeholder).length, ' ') +
-        nTimes(chalk.stripColor(options.placeholder).length, '\b'));
+  function hidePlaceholder(placeholder) {
+    placeholder && process.stdout.write(
+      nTimes(placeholder.length, space) +
+        nTimes(placeholder.length, '\b'));
   }
 
-  process.stdout.write(title + ' ');
-  showPlaceholder();
+  if (size) {
+    showPlaceholder(nTimes(size, space));
+  }
+
+  if (buffer) {
+    process.stdout.write(transform(buffer));
+  } else {
+    showPlaceholder(placeholder, chalk.grey);
+  }
 
   process.stdin.setRawMode(true);
 
@@ -51,7 +75,7 @@ module.exports = function(title, options, callback) {
       process.stdin.pause();
 
       // finally return the result
-      return callback(buffer);
+      return callback(null, buffer);
     }
 
     if (key && key.ctrl && 'c' === key.name) {
@@ -61,19 +85,19 @@ module.exports = function(title, options, callback) {
     } else if (key && key.name === 'escape') {
 
       process.stdout.write(nTimes(index, '\b'));
-      process.stdout.write(nTimes(buffer.length, ' '));
+      process.stdout.write(nTimes(buffer.length, space));
       process.stdout.write(nTimes(buffer.length, '\b'));
       buffer = '';
       index  = 0;
 
-      showPlaceholder();
+      showPlaceholder(placeholder, chalk.grey);
 
     } else if (key && key.name === 'backspace') {
 
       if (index > 0) {
 
         process.stdout.write('\b');
-        process.stdout.write(options.transform(buffer.substr(index)) + ' ');
+        process.stdout.write(transform(buffer.substr(index)) + space);
         process.stdout.write(nTimes(buffer.length - index + 1, '\b'));
 
         buffer = buffer.substr(0, index - 1) + buffer.substr(index);
@@ -96,12 +120,16 @@ module.exports = function(title, options, callback) {
 
     } else if (chunk) {
 
-      process.stdout.write(options.transform(chunk));
-      process.stdout.write(options.transform(buffer.substr(index)));
+      if (size && buffer.length >= size) {
+        return;
+      }
+
+      process.stdout.write(transform(chunk));
+      process.stdout.write(transform(buffer.substr(index)));
       process.stdout.write(nTimes(buffer.length - index, '\b'));
 
       if (buffer.length === 0 && chunk.length > 0) {
-        clearPlaceholder();
+        hidePlaceholder(placeholder);
       }
 
       buffer = buffer.substr(0, index) + chunk + buffer.substr(index);
@@ -109,11 +137,11 @@ module.exports = function(title, options, callback) {
     }
 
     if (buffer.length === 0) {
-      showPlaceholder();
+      showPlaceholder(placeholder, chalk.grey);
     }
 
   });
   
   // start listening on stdin
   process.stdin.resume();
-};
+}
