@@ -5,30 +5,31 @@ var path = require('path');
 var fs = require('fs');
 var runScriptAsPromise = require('./common').runScriptAsPromise;
 
-module.exports = function reload (pathToAssets) {
+module.exports = function rebuild (pathToAssets) {
 
- pathToAssets = path.resolve(pathToAssets);
+  pathToAssets = path.resolve(pathToAssets);
 
   if (!fs.existsSync(pathToAssets)) {
     throw new Error('directory ' + pathToAssets + ' does not exist');
   }
 
-  var haproxyRestartScript = path.join(pathToAssets, 'haproxy-restart.sh');
-
   Promise.all(
+  
     fs.readdirSync(pathToAssets).map(function (appId) {
 
-      var pathToRespawnScript = path.join(pathToAssets, appId, 'respawn.sh');
-      return runScriptAsPromise(pathToRespawnScript);
+      var pathToPullScript  = path.join(pathToAssets, appId, 'pull.sh');
+      var pathToBuildScript = path.join(pathToAssets, appId, 'build.sh');
+
+      return runScriptAsPromise(pathToPullScript).then(function () {
+        return runScriptAsPromise(pathToBuildScript);
+      });
 
     })
-  ).then(function () {
-    return runScriptAsPromise(haproxyRestartScript);
 
-  }, function (err) {
-
+  ).catch(function (err) {
     console.log(chalk.red('FAILED'));
     console.log(err);
   });
 
 }
+

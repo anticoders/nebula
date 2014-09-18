@@ -1,5 +1,7 @@
 
+var Promise = require('es6-promise').Promise;
 var crypto = require('crypto');
+var spawn = require('child_process').spawn;
 
 module.exports = {
 
@@ -20,6 +22,15 @@ module.exports = {
         };
       }
     };
+  },
+
+  runScriptAsPromise: function (pathToScrip) {
+    console.log('executing ' + pathToScrip.cyan);
+    return new Promise(function (resolve, reject) {
+      var child = spawn(pathToScrip, [], { stdio: 'inherit' });
+      child.on('error', reject);
+      child.on('exit', resolve);
+    });
   },
 
 }

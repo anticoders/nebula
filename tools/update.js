@@ -2,11 +2,13 @@ var handlebars = require('handlebars');
 var commander = require('commander');
 var Promise = require('es6-promise').Promise;
 var mkdirp = require('mkdirp');
+var common = require('./common');
 var colors = require('colors');
 var Fiber = require('fibers');
 var exec = require('child_process').exec;
 var path = require('path');
 var fs = require('fs');
+var either = common.either;
 
 module.exports = function update (configJsonPath, prefix) {
 
@@ -159,13 +161,3 @@ module.exports = function update (configJsonPath, prefix) {
   }).run();
 
 }
-
-function either (first) {
-  return {
-    or: function (second) {
-      return function (arg1, arg2) {
-        return arg1 ? first(arg1) : second(arg2);
-      };
-    }
-  };
-};

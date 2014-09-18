@@ -4,6 +4,7 @@ var program = require('commander');
 var update = require('../tools/update');
 var deploy = require('../tools/deploy');
 var reload = require('../tools/reload');
+var rebuild = require('../tools/rebuild');
 var config = require('../tools/config');
 var colors = require('colors');
 var Fiber = require('fibers');
@@ -17,8 +18,9 @@ var defaultLockFilePath = path.join(process.env.HOME, '.nebula' , 'assets' ,'neb
 
 program
   .version('0.0.1')
-  .option('-c, --config <relpath>', 'config file [default: nebula.json]', 'nebula.json')
-  .option('-l, --config-lock <relpath>', 'config file [default: nebula.lock]', defaultLockFilePath)
+  .option('-c, --config <path>', 'config file [default: nebula.json]', 'nebula.json')
+  .option('-a, --assets <path>', 'path to directory containing assets', path.join('.nebula', 'assets'))
+  .option('-l, --config-lock <path>', 'config file [default: nebula.lock]', defaultLockFilePath)
   .option('-f, --file <path>', 'load config from a specified file')
   .option('-s, --save', 'save config file to nebula cache');
 
@@ -71,10 +73,17 @@ program
   });
 
 program
+  .command('rebuild')
+  .description('rebuild apps')
+  .action(function () {
+    rebuild(this.assets);
+  });
+
+program
   .command('reload')
   .description('reload server')
   .action(function () {
-    reload(path.resolve(this.configLock), 'nebula');
+    reload(this.assets);
   });
 
 program.parse(process.argv)
