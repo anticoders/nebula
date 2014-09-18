@@ -12,158 +12,128 @@ var chalk = require('chalk');
 var fs = require('fs');
 var exec = require('child_process').exec;
 var create = require('./create');
+var unicode = require('./common').unicode;
+var either = require('./common').either;
 
 module.exports = function config (name, options) {
 
-  //if (!fs.existsSync('.meteor')) {
-  //  console.log("\u26A0 it looks like you're not in a valid meteor project directory".yellow);
-  //}
+  var fiber = Fiber.current;
 
-  if (!fs.existsSync('.nebula')) {
-    fs.mkdirSync('.nebula');
+  if (!fiber) {
+    throw new Error('config must be runned within a fiber');
   }
 
-  var pathToConfig = path.join('.nebula', 'config');
-  var settings = options.settings || findSettingsByName(name);
+  var reject = function (err) { fiber.throwInto(err); };
+  var resolve = function (res) { fiber.run(res); };
 
-  if (options.settings && name) {
-    console.log('settings are provided explicitly, igoring name'.yellow);
-  }
+  var pathToDeploy = path.join('.nebula', 'deploy');
+  mkdirp.sync(pathToDeploy);
 
+  var settings = options.settings || findSettingsByName(pathToDeploy, name);
   if (!settings) {
     console.log("\u00D7 no settings provided".red);
     return;
   }
-  
-  if (!settings.id) {
-    console.log('settings id must be provided'.red);
+
+  settings.deploy = settings.deploy || name;
+  if (!settings.appId) {
+    console.log('settings appId must be provided'.red);
     return;
   }
 
-  console.log("\u2714 using settings:".green);
-  console.log(JSON.stringify(settings, undefined, 2).magenta);
+  console.log(chalk.green(              "==============================="));
+  console.log(chalk.green(unicode.mark + " using the following settings:"));
+  console.log(chalk.green(              "==============================="));
+  console.log(chalk.magenta(JSON.stringify(settings, undefined, 2)));
 
-  if (options.save) {
-    mkdirp.sync(pathToConfig);
-    fs.writeFileSync(path.join(pathToConfig, settings.id + '.json'), JSON.stringify(settings, undefined, 2) + '\n');
+  var save = options.save;
+
+  if (!save && !fs.existsSync(path.join(pathToDeploy, settings.deploy + '.yml'))) {
+    process.stdout.write(chalk.underline('Save?') + ' : ');
+    form.input({ placeholder: 'do you want to save?' }, either(reject).or(resolve));
+    save = [ 'y', 'yes', 'true', '1' ].indexOf( Fiber.yield().toLowerCase() ) >= 0;
+    
+    console.log();
+
+    if (save) {
+      template = handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'default.yml'), 'utf8'));
+      fs.writeFileSync(path.join(pathToDeploy, settings.deploy + '.yml'), template(settings) + '\n');
+    }
+  } else if (save) {
+    fs.writeFileSync(path.join(pathToDeploy, settings.deploy + '.yml'),
+      yaml.safeDump(settings, { skipInvalid: true }) + '\n');
   }
 
   return settings;
 }
 
+function findSettingsByName (pathToDeploy, name) {
 
-function findSettingsByName (name) {
-
-  var listOfFiles = fs.readdirSync('.nebula').filter(function (file) { return path.extname(file) === '.yml' });
-  var defaultFileName = 'default.yml';
-  var defaultTemplate;
-  var defaultContents;
-  var settings;
-  var ruler;
   var fiber = Fiber.current;
-  var reject = function (err) { fiber.throwInto(err); };
-  var resolve = function (res) { fiber.run(res); };
 
   if (!fiber) {
     throw new Error('findByName must be runned within a fiber');
   }
 
-  create(name);
+  var reject = function (err) { fiber.throwInto(err); };
+  var resolve = function (res) { fiber.run(res); };
+
+  var deploys = {};
+  var settings;
+  var listOfFiles = fs.readdirSync(pathToDeploy).filter(function (file) { return path.extname(file) === '.yml' });
 
   if (listOfFiles.length === 0) {
-    // drop a default file
 
-    console.log([
-
-      "It looks like you're deploying for the first time.",
-
-    ].join('\n'));
-
-    defaultTemplate = handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'default.yml'), 'utf8'));
-    defaultContents = defaultTemplate({
-      host     : "127.0.0.1",
-      username : "nebula",
-      password : "secret",
-
-      git: "https://github.com/anticoders/nebula.git",
-
-      ROOT_URL  : "http://localhost:3000",
-      MONGO_URL : "mongodb://localhost:27017/nebula",
-    });
-
-    fs.writeFileSync(path.join('.nebula', defaultFileName), defaultContents);
     fs.writeFileSync(path.join('.nebula', 'README.md'), fs.readFileSync(path.join(__dirname, 'templates', 'README.md')));
     fs.writeFileSync(path.join('.nebula', '.gitignore'), [
-      "assets", "builds", "config", "source"
+      "assets", "builds", "source"
     ].join('\n'));
-
-    ruler = "============ " + path.join(".nebula/", defaultFileName) + " ============";
-
-    console.log("since you're running nebula for the first time, we've created an example config file for you:\n")
-    console.log(ruler);
-    console.log(defaultContents.green);
-    console.log( new Array(ruler.length).join('=') );
-
-    listOfFiles.push(defaultFileName);
   }
 
-  listOfFiles = listOfFiles.map(function (file) {
-    return {
-      path: path.join(".nebula", file),
-      name: path.basename(file, '.yml'),
-    }
+  listOfFiles.forEach(function (file) {
+    var name = path.basename(file, '.yml');
+    deploys[name] = path.join(pathToDeploy, file);
   });
 
-  function listOfOptionsAsString () {
-    return listOfFiles.map(function (file) {
-      return "\u2022 " + file.name;
-    }).join('\n');
+  var hasDefault = deploys.default !== undefined;
+
+  if (!name && hasDefault) {
+    name = 'default';
   }
 
-  if (listOfFiles.length > 1 && !name) {
-    console.log("you need to choose from one of:");
-    console.log(listOfOptionsAsString().green);
-    return;
+  if (!name && listOfFiles.length === 1) {
+    name = Object.keys(deploys)[0];
   }
 
-  if (name) {
-    settings = listOfFiles.filter(function (file) {
-      return name === file.name;
-    })[0];
-    if (!settings) {
-      console.log("config file ".red + name.red + " does not exist".red);
-      console.log("valid choices are:");
-      console.log(listOfOptionsAsString());
+  if (!name && listOfFiles.length > 1) {
+
+    process.stdout.write(chalk.underline('Choose deploy') + ' : ');
+    form.input({ placeholder: Object.keys(deploys).join(', ') }, either(reject).or(resolve));
+
+    name = Fiber.yield();
+    process.stdout.write('\n\r');
+  }
+
+  if (!name || !deploys[name]) {
+
+    if (name) {
+      console.log('settings file for ' + chalk.underline(name) + ' does not exist, but we can create it:');
+    }
+
+    settings = create(name);
+    name = settings.deploy;
+
+  } else {
+
+    try {
+      settings = yaml.safeLoad(fs.readFileSync(deploys[name], 'utf8'));
+    } catch(err) {
+      // TODO: throw error maybe?
+      console.log(err.toString().red);
       return;
     }
-  } else {
-    settings = listOfFiles[0];
-  }
 
-  try {
-    settings = yaml.safeLoad(fs.readFileSync(settings.path, 'utf8'));
-  } catch(err) {
-    console.log(err.toString().red);
-    return;
-  }
-
-  var pathToIdsFile = path.join('.nebula', 'nebula.json');
-  if (!fs.existsSync(pathToIdsFile)) {
-    fs.writeFileSync(pathToIdsFile, "{}");
-  }
-  
-  var IDs = JSON.parse(fs.readFileSync(pathToIdsFile, 'utf8'));
-
-  settings.id = settings.id || IDs[settings.name] || randomHexString(8); //|| new ObjectID();
-  
-  if (!IDs[settings.name]) {
-    IDs[settings.name] = settings.id;
-    fs.writeFileSync(pathToIdsFile, JSON.stringify(IDs, undefined, 2));
-
-    console.log('we have added a unique id for ' + settings.name + ' app to ' + pathToIdsFile + ' file');
-    console.log('you should generally commit this file to your repository');
   }
 
   return settings;
-
 }

@@ -1,15 +1,26 @@
-host     : {{host}}
-username : {{username}}
-password : {{password}}
+# gears
+
+appId  : "{{appId}}"
+deploy : "{{deploy}}"
+
+# SSH credentials
+
+host     : "{{host}}"
+port     : "{{port}}"
+username : "{{username}}"
+password : "{{password}}"
+
+# repository
 
 repository :
-  git : {{git}}
-  {{#if dir}}
-  dir : {{dir}}
-  {{/if}}
+  url : "{{repository.url}}"
 
-name : nebula
+# environment settings
+
 environment :
-  METEOR_SETTINGS : {}
-  MONGO_URL       : {{MONGO_URL}}
-  ROOT_URL        : {{ROOT_URL}}
+# you can setup meteor settings here
+#  METEOR_SETTINGS :
+#    public:
+#      hello: world
+  MONGO_URL       : "{{environment.MONGO_URL}}"
+  ROOT_URL        : "{{environment.ROOT_PATH}}"

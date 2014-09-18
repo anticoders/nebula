@@ -25,12 +25,12 @@ program
 program
   .command('deploy [name]')
   .description('deploy project')
-  .action(function (name) {
+  .action(wrap(function (name) {
     var settings = config(name, this);
     if (settings) {
       deploy(settings, 'nebula');
     }
-  });
+  }));
 
 program
   .command('config [name]')
@@ -66,9 +66,9 @@ program
 program
   .command('update')
   .description('update config')
-  .action(function () {
+  .action(wrap(function () {
     update(this.config, 'nebula');
-  });
+  }));
 
 program.parse(process.argv)
 
@@ -76,7 +76,7 @@ function wrap(action) {
   return function () {
     var self = this, args = arguments;
     Fiber(function () {
-      action.apply(self, arguments);
+      action.apply(self, args);
     }).run();
   }
 }

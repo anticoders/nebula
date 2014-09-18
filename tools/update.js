@@ -12,6 +12,12 @@ var either = common.either;
 
 module.exports = function update (configJsonPath, prefix) {
 
+  if (!fiber) {
+    throw new Error('update must be runned within a fiber');
+  }
+
+  var fiber = Fiber.current;
+
   // TODO: use this prefix in place of hardcoded "nebula"
   prefix = prefix || 'nebula';
 
@@ -38,7 +44,6 @@ module.exports = function update (configJsonPath, prefix) {
 
   var rebuildScriptTemplate =
     handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'rebuild.sh')).toString('utf8'));
-
 
   mkdirp.sync(pathToConfig);
   mkdirp.sync(pathToSource);
@@ -79,99 +84,96 @@ module.exports = function update (configJsonPath, prefix) {
 
   // TODO: make sure that app names are unique
 
-  Fiber(function () {
-    var fiber = Fiber.current;
 
-    //throw new Error("LOL");
 
-    Promise.all(
-      listOfIds.map(function (name) {
-        return new Promise(function (resolve, reject) {
-          var app = configJson.apps[name];
-          console.log(name.cyan + ' -> ' + app.repository.git.yellow);
-          exec('git ls-remote ' + app.repository.git, { cwd: null }, either(reject).or(function (stdout) {
-            var match = /^([\da-f]+)\s+HEAD$/m.exec(stdout);
-            if (match) {
-              configJson.apps[name].sha = match[1];
-              console.log(name.cyan + ' -> ' + match[1]);
-            }
-            resolve();
-          }));
-        });
-      })
-    ).then(function () {
+  //throw new Error("LOL");
+
+  Promise.all(
+    listOfIds.map(function (name) {
+      return new Promise(function (resolve, reject) {
+        var app = configJson.apps[name];
+        console.log(name.cyan + ' -> ' + app.repository.git.yellow);
+        exec('git ls-remote ' + app.repository.git, { cwd: null }, either(reject).or(function (stdout) {
+          var match = /^([\da-f]+)\s+HEAD$/m.exec(stdout);
+          if (match) {
+            configJson.apps[name].sha = match[1];
+            console.log(name.cyan + ' -> ' + match[1]);
+          }
+          resolve();
+        }));
+      });
+    })
+  ).then(function () {
+    fiber.run();
+  }, function (error) {
+    fiber.throwInto(error);
+  }).catch(function (error) {
+    console.error(error.stack.red);
+  });
+
+  Fiber.yield();
+
+  var lastFreePort = 3000;
+
+  listOfIds.forEach(function (id) {
+    var app = configJson.apps[id];
+
+    app.port = lastFreePort++;
+    app.hash = app.id;
+    app.user = process.env.USER;
+
+    app.pathToAssets = path.join(pathToAssets, id);
+    app.pathToSource = path.join(pathToSource, id);
+    app.pathToBuilds = path.join(pathToBuilds, id);
+
+    mkdirp.sync(app.pathToAssets);
+    
+    // environment variables
+    fs.writeFileSync(path.join(app.pathToAssets, 'variables'), Object.keys(app.environment).map(function (key) {
+      return key + '=' + (typeof app.environment[key] === 'object' ? JSON.stringify(app.environment[key]) : app.environment[key].toString());
+    }).join('\n'));
+
+    // scripts from templates
+    scripts.forEach(function (script) {
+      fs.writeFileSync(path.join(app.pathToAssets, script.name), script.template(app));
+      if (/\.sh/.test(script.name)) {
+        fs.chmodSync(path.join(app.pathToAssets, script.name), "744");
+      }
+    });
+
+  });
+
+  console.log('saving config files ...');
+
+  // lock file
+  // fs.writeFileSync(configLockPath, JSON.stringify(configJson, undefined, 2));
+
+  // haproxy config
+  fs.writeFileSync(pathToHaproxyConfig, haproxyConfigTemplate({
+    apps: Object.keys(configJson.apps).map(function (name) { 
+      return configJson.apps[name];
+    })
+  }));
+
+  // rebuild script
+  fs.writeFileSync(pathToRebuildScript, rebuildScriptTemplate({
+    listOfIds : listOfIds
+  }));
+
+  // restart script
+  fs.writeFileSync(pathToRestartScript, restartScriptTemplate({
+    pathToHaproxyConfig : pathToHaproxyConfig,
+    listOfIds           : listOfIds
+  }));
+
+  fs.chmodSync(pathToRestartScript, "744");
+  fs.chmodSync(pathToRebuildScript, "744");
+
+  exec("git add restart.sh rebuild.sh " + listOfIds.join(' ') + " && git commit -a -m 'updated assets'",
+    { cwd: pathToAssets }, function () {
       fiber.run();
-    }, function (error) {
-      fiber.throwInto(error);
-    }).catch(function (error) {
-      console.error(error.stack.red);
     });
 
-    Fiber.yield();
-
-    var lastFreePort = 3000;
-
-    listOfIds.forEach(function (id) {
-      var app = configJson.apps[id];
-
-      app.port = lastFreePort++;
-      app.hash = app.id;
-      app.user = process.env.USER;
-
-      app.pathToAssets = path.join(pathToAssets, id);
-      app.pathToSource = path.join(pathToSource, id);
-      app.pathToBuilds = path.join(pathToBuilds, id);
-
-      mkdirp.sync(app.pathToAssets);
-      
-      // environment variables
-      fs.writeFileSync(path.join(app.pathToAssets, 'variables'), Object.keys(app.environment).map(function (key) {
-        return key + '=' + (typeof app.environment[key] === 'object' ? JSON.stringify(app.environment[key]) : app.environment[key].toString());
-      }).join('\n'));
-
-      // scripts from templates
-      scripts.forEach(function (script) {
-        fs.writeFileSync(path.join(app.pathToAssets, script.name), script.template(app));
-        if (/\.sh/.test(script.name)) {
-          fs.chmodSync(path.join(app.pathToAssets, script.name), "744");
-        }
-      });
-
-    });
-
-    console.log('saving config files ...');
-
-    // lock file
-    // fs.writeFileSync(configLockPath, JSON.stringify(configJson, undefined, 2));
-
-    // haproxy config
-    fs.writeFileSync(pathToHaproxyConfig, haproxyConfigTemplate({
-      apps: Object.keys(configJson.apps).map(function (name) { 
-        return configJson.apps[name];
-      })
-    }));
-
-    // rebuild script
-    fs.writeFileSync(pathToRebuildScript, rebuildScriptTemplate({
-      listOfIds : listOfIds
-    }));
-
-    // restart script
-    fs.writeFileSync(pathToRestartScript, restartScriptTemplate({
-      pathToHaproxyConfig : pathToHaproxyConfig,
-      listOfIds           : listOfIds
-    }));
-
-    fs.chmodSync(pathToRestartScript, "744");
-    fs.chmodSync(pathToRebuildScript, "744");
-
-    exec("git add restart.sh rebuild.sh " + listOfIds.join(' ') + " && git commit -a -m 'updated assets'",
-      { cwd: pathToAssets }, function () {
-        fiber.run();
-      });
-
-    Fiber.yield();
-
-  }).run();
+  Fiber.yield();
 
 }

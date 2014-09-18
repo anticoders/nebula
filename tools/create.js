@@ -60,16 +60,13 @@ module.exports = function create (name) {
     conn.end(); resolve();
   }).on('error', reject).connect(options.data);
 
-  try {
-    Fiber.yield();
-  } catch (err) {
-    console.log(chalk.red(unicode.fail + ' cannot connect to the server (' + err.toString() + ')'));
-    return;
-  }
+  Fiber.yield();
 
-  options.data.id = randomHexString(8);
+  options.data.appId = randomHexString(8);
 
+  console.log(chalk.green(              '=============================='));
   console.log(chalk.green(unicode.mark + ' credentials seems to be fine'));
+  console.log(chalk.green(              '=============================='));
 
   // REPOSITORY SETTINGS
   console.log(chalk.underline.magenta("Repository:"));
@@ -111,5 +108,29 @@ module.exports = function create (name) {
 
   Fiber.yield();
 
-  return options.data;
+  return clean(options.data);
+}
+
+
+function clean(formData) {
+
+  var settings = { appId: formData.appId };
+
+  [ 'host', 'port', 'username', 'password' ].forEach(function (name) {
+    settings[name] = formData[name];
+  });
+
+  settings.repository = {
+    url      : formData.repoUrl,
+    username : formData.repoUser,
+    password : formData.repoPass,
+  }
+
+  settings.environment = {};
+
+  [ 'MONGO_URL', 'ROOT_PATH' ].forEach(function (name) {
+    settings.environment[name] = formData[name];
+  });
+
+  return settings;
 }

@@ -6,8 +6,9 @@ var spawn = require('child_process').spawn;
 module.exports = {
 
   unicode: {
-    mark: "\u2714",
-    fail: "\u00D7",
+    mark : "\u2714",
+    fail : "\u00D7",
+    dot  : "\u00B7",
   },
 
   randomHexString: function (length) {
