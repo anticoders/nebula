@@ -5,9 +5,9 @@ var update = require('../tools/update');
 var deploy = require('../tools/deploy');
 var reload = require('../tools/reload');
 var config = require('../tools/config');
-var prompt = require('../tools/prompt');
 var colors = require('colors');
 var chalk = require('chalk');
+var form = require('../tools/prompt');
 var yaml = require('js-yaml');
 var path = require('path');
 var fs = require('fs');
@@ -38,12 +38,21 @@ program
     var buffer = "";
     var self = this;
 
-    //prompt('Config name:', {
-    //  transform   : function (str) { return chalk.cyan(str) },
-    //  placeholder : chalk.red('enter some unique name'),
-    //}, function (result) {
-    //
-    //});
+    form([
+
+      { name: 'host',       label: 'Host',        placeholder: 'domain or ip address',   type: 'text',     },
+      { name: 'port',       label: 'SSH Port',    placeholder: 'default is 22',          type: 'text',     value: "22" },
+      { name: 'username',   label: 'User',        placeholder: 'username',               type: 'text',     },
+      { name: 'password',   label: 'Password',    placeholder: '',                       type: 'password', },
+
+      //{ name: 'privateKey', label: 'Private Key', placeholder: 'path to private key',    type: 'file'     },
+    ], {
+      transform: function (str) { return chalk.green(str) }
+    }, function (err, data) {
+      console.log(data);
+    });
+
+    return;
 
     function consume(err, data) {
       if (!err) {
