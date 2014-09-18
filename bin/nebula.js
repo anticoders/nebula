@@ -3,8 +3,6 @@
 var program = require('commander');
 var update = require('../tools/update');
 var deploy = require('../tools/deploy');
-var reload = require('../tools/reload');
-var rebuild = require('../tools/rebuild');
 var config = require('../tools/config');
 var colors = require('colors');
 var Fiber = require('fibers');
@@ -70,20 +68,6 @@ program
   .description('update config')
   .action(function () {
     update(this.config, 'nebula');
-  });
-
-program
-  .command('rebuild')
-  .description('rebuild apps')
-  .action(function () {
-    rebuild(this.assets);
-  });
-
-program
-  .command('reload')
-  .description('reload server')
-  .action(function () {
-    reload(this.assets);
   });
 
 program.parse(process.argv)

@@ -21,7 +21,8 @@ module.exports = function update (configJsonPath, prefix) {
   var pathToAssets = path.resolve(path.join('.nebula', 'assets')); // these files should have versions
 
   var pathToHaproxyConfig = path.resolve(path.join('.nebula', 'assets', 'haproxy.cfg'));
-  var pathToHaproxyRestartScript = path.resolve(path.join('.nebula', 'assets', 'haproxy-restart.sh'));
+  var pathToRestartScript = path.resolve(path.join('.nebula', 'assets', 'restart.sh' ));
+  var pathToRebuildScript = path.resolve(path.join('.nebula', 'assets', 'rebuild.sh' ));
 
   var scripts = [ "build.sh", "pull.sh", "respawn.sh", "upstart.conf" ].map(function (name) {
     return { name: name,
@@ -29,9 +30,15 @@ module.exports = function update (configJsonPath, prefix) {
     };
   });
 
-  var haproxyConfigTemplate = handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'haproxy.cfg')).toString('utf8'));
-  var haproxyRestartScriptTemplate =
-    handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'haproxy-restart.sh')).toString('utf8'));
+  var haproxyConfigTemplate =
+    handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'haproxy.cfg')).toString('utf8'));
+
+  var restartScriptTemplate =
+    handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'restart.sh')).toString('utf8'));
+
+  var rebuildScriptTemplate =
+    handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'rebuild.sh')).toString('utf8'));
+
 
   mkdirp.sync(pathToConfig);
   mkdirp.sync(pathToSource);
@@ -57,7 +64,7 @@ module.exports = function update (configJsonPath, prefix) {
     configLock = JSON.parse(fs.readFileSync(configLockPath).toString('utf8'));
   }
 
-  var listOfNames = Object.keys(configJson.apps);
+  var listOfIds = Object.keys(configJson.apps);
 
   // make sure the asset repository is initialized
   if (!fs.existsSync(path.join(pathToAssets, '.git'))) {
@@ -78,7 +85,7 @@ module.exports = function update (configJsonPath, prefix) {
     //throw new Error("LOL");
 
     Promise.all(
-      listOfNames.map(function (name) {
+      listOfIds.map(function (name) {
         return new Promise(function (resolve, reject) {
           var app = configJson.apps[name];
           console.log(name.cyan + ' -> ' + app.repository.git.yellow);
@@ -104,7 +111,7 @@ module.exports = function update (configJsonPath, prefix) {
 
     var lastFreePort = 3000;
 
-    listOfNames.forEach(function (id) {
+    listOfIds.forEach(function (id) {
       var app = configJson.apps[id];
 
       app.port = lastFreePort++;
@@ -135,8 +142,7 @@ module.exports = function update (configJsonPath, prefix) {
     console.log('saving config files ...');
 
     // lock file
-    configJson.haproxyRestartScript = pathToHaproxyRestartScript;
-    fs.writeFileSync(configLockPath, JSON.stringify(configJson, undefined, 2));
+    // fs.writeFileSync(configLockPath, JSON.stringify(configJson, undefined, 2));
 
     // haproxy config
     fs.writeFileSync(pathToHaproxyConfig, haproxyConfigTemplate({
@@ -145,16 +151,24 @@ module.exports = function update (configJsonPath, prefix) {
       })
     }));
 
-    // haproxy restart script
-    fs.writeFileSync(pathToHaproxyRestartScript, haproxyRestartScriptTemplate({
-      pathToHaproxyConfig: pathToHaproxyConfig
+    // rebuild script
+    fs.writeFileSync(pathToRebuildScript, rebuildScriptTemplate({
+      listOfIds : listOfIds
     }));
 
-    fs.chmodSync(pathToHaproxyRestartScript, "744");
+    // restart script
+    fs.writeFileSync(pathToRestartScript, restartScriptTemplate({
+      pathToHaproxyConfig : pathToHaproxyConfig,
+      listOfIds           : listOfIds
+    }));
 
-    exec("git add nebula.lock " + listOfNames.join(' ') + " && git commit -a -m 'updated assets'", { cwd: pathToAssets }, function () {
-      fiber.run();
-    });
+    fs.chmodSync(pathToRestartScript, "744");
+    fs.chmodSync(pathToRebuildScript, "744");
+
+    exec("git add restart.sh rebuild.sh " + listOfIds.join(' ') + " && git commit -a -m 'updated assets'",
+      { cwd: pathToAssets }, function () {
+        fiber.run();
+      });
 
     Fiber.yield();
 
