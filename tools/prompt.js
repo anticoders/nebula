@@ -7,7 +7,7 @@ keypress(process.stdin);
 module.exports = function form (fields, options, callback) {
 
   var index = -1;
-  var formData = {};
+  var formData = options.data || {};
   var width = Math.max.apply(null, fields.map(function (field) { return field.label && field.label.length; }));
 
   next();
@@ -16,7 +16,6 @@ module.exports = function form (fields, options, callback) {
     var field;
     index += 1;
     if (index > fields.length - 1) {
-      process.stdout.write('\n\r');
       callback(null, formData);
     } else {
       // use default options
@@ -31,8 +30,9 @@ module.exports = function form (fields, options, callback) {
         field.value = formData[field.name];
       }
       //--------------------------------------------------------
-      process.stdout.write('\n\r' + align(field.label) + ' : ');
+      process.stdout.write(align(field.label) + ' : ');
       module.exports.input(field, function (err, value) {
+        process.stdout.write('\n\r');
         formData[field.name] = value;
         setTimeout(next);
       });
@@ -58,8 +58,9 @@ module.exports.input = function (options, callback) {
   var left  = '\u001b[D';
   var begin = '\u001b[0G';
 
-  var _transform = options.transform || function (str) {
-    return mask ? nTimes(str.length, mask[0]) : str;
+  var _transform = function (str) {
+    str = mask ? nTimes(str.length, mask[0]) : str;
+    return options.transform ? options.transform(str) : str;
   }
 
   if (size && placeholder) {

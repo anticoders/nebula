@@ -6,6 +6,7 @@ var deploy = require('../tools/deploy');
 var reload = require('../tools/reload');
 var config = require('../tools/config');
 var colors = require('colors');
+var Fiber = require('fibers');
 var chalk = require('chalk');
 var form = require('../tools/prompt');
 var yaml = require('js-yaml');
@@ -34,52 +35,33 @@ program
 program
   .command('config [name]')
   .description('configure project')
-  .action(function (name) {
+  .action(wrap(function (name) {
+
     var buffer = "";
+    var fiber = Fiber.current;
     var self = this;
 
-    form([
-
-      { name: 'host',       label: 'Host',        placeholder: 'domain or ip address',   type: 'text',     },
-      { name: 'port',       label: 'SSH Port',    placeholder: 'default is 22',          type: 'text',     value: "22" },
-      { name: 'username',   label: 'User',        placeholder: 'username',               type: 'text',     },
-      { name: 'password',   label: 'Password',    placeholder: '',                       type: 'password', },
-
-      //{ name: 'privateKey', label: 'Private Key', placeholder: 'path to private key',    type: 'file'     },
-    ], {
-      transform: function (str) { return chalk.green(str) }
-    }, function (err, data) {
-      console.log(data);
-    });
-
-    return;
-
     function consume(err, data) {
-      if (!err) {
-        self.settings = tryJSONorYAML(data ? data.toString() : buffer);
-        if (self.settings) {
-          config(null, self);
-        } else {
-          console.log('wrong data format'.red);
-        }
-      } else {
-        console.log(err.toString().red);
+      if (err) fiber.throwInto(err);
+      try {
+        fiber.run(tryJSONorYAML(data ? data.toString() : buffer));
+      } catch (err) {
+        fiber.throwInto(err);
       }
     }
 
     if (this.file) {
       if (this.file === '-') {
-        process.stdin.on('data', function (data) {
-          buffer += data.toString();
-        });
+        process.stdin.on('data', function (data) { buffer += data.toString(); });
         process.stdin.on('end', consume);
       } else {
         fs.readFile(this.file, consume);
       }
-    } else {
-      config(name, this);
+      this.settings = Fiber.yield();
     }
-  });
+
+    config(name, this);
+  }));
 
 program
   .command('update')
@@ -97,6 +79,15 @@ program
 
 program.parse(process.argv)
 
+function wrap(action) {
+  return function () {
+    var self = this, args = arguments;
+    Fiber(function () {
+      action.apply(self, arguments);
+    }).run();
+  }
+}
+
 function tryJSONorYAML(string) {
   try {
     return JSON.parse(string);
@@ -104,7 +95,9 @@ function tryJSONorYAML(string) {
     try {
       return yaml.safeLoad(string);
     } catch (err2) {
-      return;
+      throw new Error('wrong data format:\n\n'
+        + 'JSON: ' + err1.toString() + '\n\n'
+        + err2.toString());
     }
   }
 }
