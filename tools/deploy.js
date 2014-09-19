@@ -1,6 +1,3 @@
-var requireFiber = require('./common').requireFiber;
-var runScriptAsAsyncTask =require('./common').runScriptAsAsyncTask;
-var randomHexString = require('./common').randomHexString;
 var Connection = require('ssh2');
 var config = require('./config');
 var update = require('./update');
@@ -13,8 +10,16 @@ var form = require('./prompt');
 var yaml = require('js-yaml');
 var fs = require('fs');
 
+var common = require('./common');
+var requireFiber = common.requireFiber;
+var runScriptAsAsyncTask = common.runScriptAsAsyncTask;
+var randomHexString = common.randomHexString;
+var either = common.either;
+
 module.exports = function deploy (name, options) {
+  var fiber = requireFiber();
   var settings;
+
   if (options.configFrom) {
     settings = grabConfig(options.configFrom);
   } else {
@@ -27,6 +32,24 @@ module.exports = function deploy (name, options) {
   } else {
     options.settings = settings;
   }
+
+  var fields = [];
+
+  if (!settings.username) {
+    fields.push({ label: 'Username', name: 'username', type: 'text' });
+  }
+
+  if (!settings.password) {
+    fields.push({
+      name  : 'password',
+      label : 'Password' + (settings.username ? ' for ' + settings.username : ''),
+      type  : 'password',
+    });
+  }
+
+  form(fields, { data: settings, transform: chalk.green }, either(fiber.reject).or(fiber.resolve));
+
+  Fiber.yield();
 
   // TODO: probably it's better to test locally than throw errors on the server
   //if (!settings.appId) {
@@ -46,9 +69,9 @@ module.exports = function deploy (name, options) {
     var uniqueTag = randomHexString(8);
 
     var questions = [
-      { re: /^\[sudo\]\s+password/m, save: false , type: 'password' },
-      { re: /^Password for 'https/m, save: true  , type: 'password' },
-      { re: /^Username for 'https/m, save: true  , type: 'text' },
+      { re: /^\[sudo\]\s+password/m, save: false , type: 'password', answer: settings.password },
+      { re: /^Password for 'https/m, save: true  , type: 'password', answer: settings.repository.password },
+      { re: /^Username for 'https/m, save: true  , type: 'text'    , answer: settings.repository.username },
     ];
 
     conn.shell(function (err, stream) {

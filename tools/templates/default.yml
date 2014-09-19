@@ -13,7 +13,9 @@ password : "{{password}}"
 # repository
 
 repository :
-  url : "{{repository.url}}"
+  url      : "{{repository.url}}"
+  username : "{{repository.username}}"
+  password : "{{repository.password}}"
 
 # environment settings
 

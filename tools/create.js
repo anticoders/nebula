@@ -17,7 +17,7 @@ module.exports = function create (name) {
 
   var options = {
     data      : { deployment: name || 'default' },
-    transform : function (str) { return chalk.green(str); },
+    transform : chalk.green,
   };
 
   // GENERAL INFO
@@ -64,6 +64,18 @@ module.exports = function create (name) {
   console.log(chalk.green(              '=============================='));
   console.log(chalk.green(unicode.mark + ' credentials seems to be fine'));
   console.log(chalk.green(              '=============================='));
+
+  options.data.save = 'no';
+
+  form([
+    { name: 'save', label: 'Save password?', placeholder: 'yes or no', type: 'boolean' }
+  ], options, either(fiber.reject).or(fiber.resolve));
+
+  Fiber.yield();
+
+  if (options.data.save !== 'yes') {
+    delete options.data.password;
+  }
 
   // REPOSITORY SETTINGS
   console.log(chalk.underline.magenta("Repository:"));
