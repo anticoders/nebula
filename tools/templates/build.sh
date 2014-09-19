@@ -16,8 +16,6 @@ fi
 
 if [ ! -e {{pathToBuilds}}/${HASH} ];
 then
-  echo "creating meteor bundle"
-  
   # TODO: alter the behavior for older releases (bundle is deprecated since 0.9.2)
   #RELEASE=`cat .meteor/release | sed 's/METEOR@//'`;
   #if [ $RELEASE \< "0.9.2" ];
@@ -27,7 +25,10 @@ then
   mkdir -p {{pathToBuilds}}
 
   # TODO: only use meteorite if smart.json is present
+  echo "installing smart packages"
   mrt install
+
+  echo "creating meteor bundle"
   meteor bundle {{pathToBuilds}}/bundle.tar.gz
   (
     cd {{pathToBuilds}}
