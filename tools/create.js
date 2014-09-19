@@ -113,7 +113,7 @@ function clean(formData) {
 
   var settings = { _name: formData.deployment };
 
-  [ 'appId', 'host', 'port', 'username', 'password' ].forEach(function (name) {
+  [ 'appId', 'domain', 'host', 'port', 'username', 'password' ].forEach(function (name) {
     settings[name] = formData[name];
   });
 

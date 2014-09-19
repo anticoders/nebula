@@ -1,6 +1,7 @@
 # gears
 
-appId  : "{{appId}}"
+appId   : "{{appId}}"
+domain  : "{{domain}}"
 
 # SSH credentials
 
