@@ -42,7 +42,7 @@ module.exports = function config (name, options) {
 function findSettingsByName (pathToConfig, name) {
 
   var fiber = requireFiber();
-  var mapFileName = {};
+  var pathsByName = {};
   var listOfFiles = fs.readdirSync(pathToConfig).filter(function (file) { return path.extname(file) === '.yml' });
 
   if (listOfFiles.length === 0) {
@@ -55,32 +55,32 @@ function findSettingsByName (pathToConfig, name) {
 
   listOfFiles.forEach(function (file) {
     var name = path.basename(file, '.yml');
-    mapFileName[name] = path.join(pathToConfig, file);
+    pathsByName[name] = path.join(pathToConfig, file);
   });
 
-  if (!name && mapFileName['default'] !== undefined) {
+  if (!name && pathsByName['default'] !== undefined) {
     name = 'default';
   }
 
   if (!name && listOfFiles.length === 1) {
-    name = Object.keys(mapFileName)[0];
+    name = Object.keys(pathsByName)[0];
   }
 
   if (!name && listOfFiles.length > 1) {
 
     process.stdout.write(chalk.underline('Choose config') + ' : ');
-    form.input({ placeholder: Object.keys(mapFileName).join(', ') }, either(fiber.reject).or(fiber.resolve));
+    form.input({ placeholder: Object.keys(pathsByName).join(', ') }, either(fiber.reject).or(fiber.resolve));
 
     name = Fiber.yield();
     process.stdout.write('\n\r');
   }
 
-  if (!name || !mapFileName[name]) {
+  if (!name || !pathsByName[name]) {
     name && console.log('settings file for ' + chalk.underline(name) + ' does not exist, but we can create it:');
     return create(name);
   }
 
-  var settings = yaml.safeLoad(fs.readFileSync(mapFileName[name], 'utf8'));
+  var settings = yaml.safeLoad(fs.readFileSync(pathsByName[name], 'utf8'));
   settings._name = name;
 
   return settings;

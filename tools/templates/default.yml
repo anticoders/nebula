@@ -1,7 +1,6 @@
 # gears
 
 appId  : "{{appId}}"
-deploy : "{{deploy}}"
 
 # SSH credentials
 
@@ -18,9 +17,9 @@ repository :
 # environment settings
 
 environment :
-# you can setup meteor settings here
+# you can add meteor settings here
 #  METEOR_SETTINGS :
 #    public:
 #      hello: world
   MONGO_URL       : "{{environment.MONGO_URL}}"
-  ROOT_URL        : "{{environment.ROOT_PATH}}"
+  ROOT_URL        : "{{environment.ROOT_URL}}"

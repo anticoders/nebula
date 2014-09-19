@@ -81,6 +81,7 @@ module.exports = function update (appId, options) {
   }
 
   // TODO: make sure that app names are unique
+  // TODO: verify if app configs have all necessary data
 
   Promise.all(
     listOfIds.map(function (appId) {
@@ -121,6 +122,10 @@ module.exports = function update (appId, options) {
 
     mkdirp.sync(app.pathToAssets);
     
+    if (app.environment && !app.environment.MONGO_URL) {
+      app.environment.MONGO_URL = "mongodb://127.0.0.1/" + appId; // development mode
+    }
+
     // environment variables
     fs.writeFileSync(path.join(app.pathToAssets, 'variables'), Object.keys(app.environment).map(function (key) {
       return key + '=' + (typeof app.environment[key] === 'object' ? JSON.stringify(app.environment[key]) : app.environment[key].toString());

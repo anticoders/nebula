@@ -19,9 +19,7 @@ program
   .version(pjson.version)
   .option('-c, --config-from <path>', 'path to the config file')
   .option('-l, --local', 'deploy locally (can be used on the server)')
-  .option('-b, --build-only', 'do not start any processes (useful for testing)')
-//  .option('-f, --file <path>', 'load config from a specified file')
-  .option('-s, --save', 'save config file to nebula cache');
+  .option('-b, --build-only', 'do not start any processes (useful for testing)');
 
 program
   .command("deploy [name]")
@@ -38,10 +36,10 @@ program
   }));
 
 program
-  .command('assets')
+  .command('assets [appId]')
   .description("create server assets based on config files from ./nebula/deploy directory")
-  .action(wrap(function () {
-    update(this.config, 'nebula');
+  .action(wrap(function (appId) {
+    update(appId, this);
   }));
 
 program

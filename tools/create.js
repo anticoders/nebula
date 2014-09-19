@@ -96,10 +96,10 @@ module.exports = function create (name) {
   // ENVIRONMENT VARIABLES
   console.log(chalk.underline.magenta("Environment:"));
 
-  options.data.ROOT_PATH = 'http://' + options.data.domain;
+  options.data.ROOT_URL = 'http://' + options.data.domain;
 
   form([
-    { name: 'ROOT_PATH', label: 'ROOT_PATH', placeholder: 'root path for your app', type: 'text' },
+    { name: 'ROOT_URL',  label: 'ROOT_URL', placeholder: 'root path for your app', type: 'text' },
     { name: 'MONGO_URL', label: 'MONGO_URL', placeholder: 'you may leave it blank', type: 'text' },
   ], options, either(fiber.reject).or(fiber.resolve));
 
@@ -125,7 +125,7 @@ function clean(formData) {
 
   settings.environment = {};
 
-  [ 'MONGO_URL', 'ROOT_PATH' ].forEach(function (name) {
+  [ 'MONGO_URL', 'ROOT_URL' ].forEach(function (name) {
     settings.environment[name] = formData[name];
   });
 

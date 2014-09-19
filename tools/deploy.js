@@ -1,9 +1,12 @@
 var requireFiber = require('./common').requireFiber;
+var runScriptAsPromise =require('./common').runScriptAsPromise;
 var Connection = require('ssh2');
 var config = require('./config');
 var update = require('./update');
 var mkdirp = require('mkdirp');
+var Fiber = require('fibers');
 var path = require('path');
+var yaml = require('js-yaml');
 var fs = require('fs');
 
 module.exports = function deploy (name, options) {
@@ -95,12 +98,13 @@ function grabConfig(fromFile) {
     process.stdin.on('data', function (data) { buffer += data.toString(); });
     process.stdin.on('end', consume);
   } else {
-    fs.readFile(this.file, consume);
+    fs.readFile(fromFile, consume);
   }
   return Fiber.yield();
 }
 
 function deployLocally(options) {
+
   var pathToDeploy = path.resolve(path.join('.nebula', 'deploy'));
   var pathToAssets = path.resolve(path.join('.nebula', 'assets'));
   var settings = options.settings;
@@ -119,9 +123,15 @@ function deployLocally(options) {
   // run update to create the necessary assets
   update(null, options);
 
+  runScriptAsPromise(path.join('.nebula', 'assets', 'rebuild.sh')).then(fiber.resolve, fiber.reject);
+
+  Fiber.yield();
+
   if (options.buildOnly) {
     return;
   }
 
-  // TODO: finally run rebuild and restart shell scripts
+  runScriptAsPromise(path.join('.nebula', 'assets', 'restart.sh')).then(fiber.resolve, fiber.reject);
+
+  Fiber.yield();
 }

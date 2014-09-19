@@ -3,6 +3,7 @@ var Promise = require('es6-promise').Promise;
 var crypto = require('crypto');
 var spawn = require('child_process').spawn;
 var Fiber = require('fibers');
+var chalk = require('chalk');
 
 module.exports = {
 
@@ -27,7 +28,7 @@ module.exports = {
   },
 
   runScriptAsPromise: function (pathToScrip) {
-    console.log('executing ' + pathToScrip.cyan);
+    console.log('executing ' + chalk.cyan(pathToScrip));
     return new Promise(function (resolve, reject) {
       var child = spawn(pathToScrip, [], { stdio: 'inherit' });
       child.on('error', reject);
