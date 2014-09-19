@@ -26,10 +26,10 @@ module.exports = function config (name, options) {
   var reject = function (err) { fiber.throwInto(err); };
   var resolve = function (res) { fiber.run(res); };
 
-  var pathToDeploy = path.join('.nebula', 'deploy');
-  mkdirp.sync(pathToDeploy);
+  var pathToConfig = path.join('.nebula', 'config');
+  mkdirp.sync(pathToConfig);
 
-  var settings = options.settings || findSettingsByName(pathToDeploy, name);
+  var settings = options.settings || findSettingsByName(pathToConfig, name);
   if (!settings) {
     console.log("\u00D7 no settings provided".red);
     return;
@@ -48,7 +48,7 @@ module.exports = function config (name, options) {
 
   var save = options.save;
 
-  if (!save && !fs.existsSync(path.join(pathToDeploy, settings.deploy + '.yml'))) {
+  if (!save && !fs.existsSync(path.join(pathToConfig, settings.deploy + '.yml'))) {
     process.stdout.write(chalk.underline('Save?') + ' : ');
     form.input({ placeholder: 'do you want to save?' }, either(reject).or(resolve));
     save = [ 'y', 'yes', 'true', '1' ].indexOf( Fiber.yield().toLowerCase() ) >= 0;
@@ -57,17 +57,17 @@ module.exports = function config (name, options) {
 
     if (save) {
       template = handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'default.yml'), 'utf8'));
-      fs.writeFileSync(path.join(pathToDeploy, settings.deploy + '.yml'), template(settings) + '\n');
+      fs.writeFileSync(path.join(pathToConfig, settings.deploy + '.yml'), template(settings) + '\n');
     }
   } else if (save) {
-    fs.writeFileSync(path.join(pathToDeploy, settings.deploy + '.yml'),
+    fs.writeFileSync(path.join(pathToConfig, settings.deploy + '.yml'),
       yaml.safeDump(settings, { skipInvalid: true }) + '\n');
   }
 
   return settings;
 }
 
-function findSettingsByName (pathToDeploy, name) {
+function findSettingsByName (pathToConfig, name) {
 
   var fiber = Fiber.current;
 
@@ -80,7 +80,7 @@ function findSettingsByName (pathToDeploy, name) {
 
   var deploys = {};
   var settings;
-  var listOfFiles = fs.readdirSync(pathToDeploy).filter(function (file) { return path.extname(file) === '.yml' });
+  var listOfFiles = fs.readdirSync(pathToConfig).filter(function (file) { return path.extname(file) === '.yml' });
 
   if (listOfFiles.length === 0) {
 
@@ -92,7 +92,7 @@ function findSettingsByName (pathToDeploy, name) {
 
   listOfFiles.forEach(function (file) {
     var name = path.basename(file, '.yml');
-    deploys[name] = path.join(pathToDeploy, file);
+    deploys[name] = path.join(pathToConfig, file);
   });
 
   var hasDefault = deploys.default !== undefined;

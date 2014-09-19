@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+var pjson = require('../package.json');
 var program = require('commander');
 var update = require('../tools/update');
 var deploy = require('../tools/deploy');
@@ -15,16 +16,16 @@ var fs = require('fs');
 var defaultLockFilePath = path.join(process.env.HOME, '.nebula' , 'assets' ,'nebula.lock');
 
 program
-  .version('0.0.1')
-  .option('-c, --config <path>', 'config file [default: nebula.json]', 'nebula.json')
+  .version(pjson.version)
+  .option('-c, --config <path>', 'path to the config file')
   .option('-a, --assets <path>', 'path to directory containing assets', path.join('.nebula', 'assets'))
-  .option('-l, --config-lock <path>', 'config file [default: nebula.lock]', defaultLockFilePath)
+//  .option('-l, --config-lock <path>', 'config file [default: nebula.lock]', defaultLockFilePath)
   .option('-f, --file <path>', 'load config from a specified file')
   .option('-s, --save', 'save config file to nebula cache');
 
 program
-  .command('deploy [name]')
-  .description('deploy project')
+  .command("deploy [name]")
+  .description("deploy project with the given config (will use `default` if name is not provided)")
   .action(wrap(function (name) {
     var settings = config(name, this);
     if (settings) {
@@ -34,7 +35,7 @@ program
 
 program
   .command('config [name]')
-  .description('configure project')
+  .description('create or show (if it already exists) project configuration file')
   .action(wrap(function (name) {
 
     var buffer = "";
@@ -64,10 +65,17 @@ program
   }));
 
 program
-  .command('update')
-  .description('update config')
+  .command('assets')
+  .description("create server assets based on config files from ./nebula/deploy directory")
   .action(wrap(function () {
     update(this.config, 'nebula');
+  }));
+
+program
+  .command('install <name>')
+  .description("make sure that all necessary assets are installed one the specified server")
+  .action(wrap(function () {
+    console.log('this feature is not implemented yet');
   }));
 
 program.parse(process.argv)
