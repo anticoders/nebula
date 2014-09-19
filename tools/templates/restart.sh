@@ -2,13 +2,13 @@ set -e
 
 for f in {{#each listOfApps}}{{appId}} {{/each}}
 do
-  if [ -d $f ]
+  if [ -d {{pathToAssets}}/$f ]
   then
     echo "respawning ${f}"
-    $f/respawn.sh
+    {{pathToAssets}}/$f/respawn.sh
   fi
 done
 
 sudo rm -f /etc/haproxy/haproxy.cfg
-sudo cp {{pathToHaproxyConfig}} /etc/haproxy/haproxy.cfg
+sudo cp {{pathToAssets}}/haproxy.cfg /etc/haproxy/haproxy.cfg
 sudo service haproxy restart

@@ -1,9 +1,9 @@
 var handlebars = require('handlebars');
 var commander = require('commander');
-var Promise = require('es6-promise').Promise;
 var mkdirp = require('mkdirp');
 var common = require('./common');
 var colors = require('colors');
+var async = require('async');
 var Fiber = require('fibers');
 var chalk = require('chalk');
 var exec = require('child_process').exec;
@@ -11,6 +11,7 @@ var path = require('path');
 var fs = require('fs');
 var either = common.either;
 var requireFiber = common.requireFiber;
+var promise = common.promise;
 
 module.exports = function update (appId, options) {
 
@@ -24,10 +25,6 @@ module.exports = function update (appId, options) {
   var pathToBuilds = path.resolve(path.join('.nebula', 'builds'));
   var pathToAssets = path.resolve(path.join('.nebula', 'assets')); // these files should have versions
 
-  var pathToHaproxyConfig = path.resolve(path.join('.nebula', 'assets', 'haproxy.cfg'));
-  var pathToRestartScript = path.resolve(path.join('.nebula', 'assets', 'restart.sh' ));
-  var pathToRebuildScript = path.resolve(path.join('.nebula', 'assets', 'rebuild.sh' ));
-
   var scripts = [ "build.sh", "pull.sh", "respawn.sh", "upstart.conf" ].map(function (name) {
     return { name: name,
       template: handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', name)).toString('utf8')),
@@ -39,11 +36,7 @@ module.exports = function update (appId, options) {
       template: handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', name)).toString('utf8')),
     };
   });
-
-  var haproxyConfigTemplate = handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'haproxy.cfg')).toString('utf8'));
-  var restartScriptTemplate = handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'restart.sh' )).toString('utf8'));
-  var rebuildScriptTemplate = handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'rebuild.sh' )).toString('utf8'));
-
+  
   mkdirp.sync(pathToDeploy);
   mkdirp.sync(pathToSource);
   mkdirp.sync(pathToAssets);
@@ -83,9 +76,9 @@ module.exports = function update (appId, options) {
   // TODO: make sure that app names are unique
   // TODO: verify if app configs have all necessary data
 
-  Promise.all(
+  async.series(
     listOfIds.map(function (appId) {
-      return new Promise(function (resolve, reject) {
+      return promise(function (resolve, reject) {
         var app = appsById[appId];
         console.log(chalk.cyan(appId) + ' -> ' + chalk.yellow(app.repository.url));
         exec('git ls-remote ' + app.repository.url, { cwd: null }, either(reject).or(function (stdout) {
@@ -97,13 +90,11 @@ module.exports = function update (appId, options) {
           resolve();
         }));
       });
-    })
-  ).then(function () {
+    }),
+  function (err) {
+    if (err) return fiber.throwInto(err);
+    //console.error(error.stack.red);
     fiber.run();
-  }, function (error) {
-    fiber.throwInto(error);
-  }).catch(function (error) {
-    console.error(error.stack.red);
   });
 
   Fiber.yield();
@@ -148,9 +139,9 @@ module.exports = function update (appId, options) {
 
   globalScripts.forEach(function (script) {
     fs.writeFileSync(path.join(pathToAssets, script.name), script.template({
-      pathToHaproxyConfig : pathToHaproxyConfig,
-      listOfApps          : listOfApps,
-      listOfIds           : listOfIds,
+      pathToAssets : pathToAssets,
+      listOfApps   : listOfApps,
+      listOfIds    : listOfIds,
     }));
     if (/\.sh/.test(script.name)) {
       fs.chmodSync(path.join(pathToAssets, script.name), "744");

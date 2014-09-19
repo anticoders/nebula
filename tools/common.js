@@ -1,7 +1,7 @@
 
-var Promise = require('es6-promise').Promise;
 var crypto = require('crypto');
 var spawn = require('child_process').spawn;
+var exec = require('child_process').exec;
 var Fiber = require('fibers');
 var chalk = require('chalk');
 
@@ -27,13 +27,21 @@ module.exports = {
     };
   },
 
-  runScriptAsPromise: function (pathToScrip) {
-    console.log('executing ' + chalk.cyan(pathToScrip));
-    return new Promise(function (resolve, reject) {
+  runScriptAsAsyncTask: function (pathToScrip) {
+    return function (callback) {
+      console.log('executing ' + chalk.cyan(pathToScrip));
+
       var child = spawn(pathToScrip, [], { stdio: 'inherit' });
-      child.on('error', reject);
-      child.on('exit', resolve);
-    });
+
+      child.on('error', function (err) {
+        callback(err);
+      });
+
+      child.on('exit', function (code) {
+        console.log('exited with code', code);
+        callback(null);
+      });
+    };
   },
 
   requireFiber: function () {
@@ -47,6 +55,16 @@ module.exports = {
     fiber.resolve = function (res) { fiber.run(res); };
 
     return fiber;
-  }
+  },
+
+  promise: function (inner) {
+    return function (callback) {
+      inner(function (res) {
+        callback(null, res);
+      }, function (err) {
+        callback(err);
+      });
+    };
+  },
 
 }

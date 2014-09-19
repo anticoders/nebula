@@ -1,9 +1,10 @@
 var requireFiber = require('./common').requireFiber;
-var runScriptAsPromise =require('./common').runScriptAsPromise;
+var runScriptAsAsyncTask =require('./common').runScriptAsAsyncTask;
 var Connection = require('ssh2');
 var config = require('./config');
 var update = require('./update');
 var mkdirp = require('mkdirp');
+var async = require('async');
 var Fiber = require('fibers');
 var path = require('path');
 var yaml = require('js-yaml');
@@ -24,6 +25,7 @@ module.exports = function deploy (name, options) {
     options.settings = settings;
   }
 
+  // TODO: probably it's better to test locally than throw errors on the server
   //if (!settings.appId) {
   //  throw new Error('settings appId must be provided');
   //}
@@ -100,6 +102,7 @@ function grabConfig(fromFile) {
   } else {
     fs.readFile(fromFile, consume);
   }
+
   return Fiber.yield();
 }
 
@@ -120,18 +123,23 @@ function deployLocally(options) {
   // save settings to deploy directory
   fs.writeFileSync(path.join(pathToDeploy, settings.appId + '.json'), JSON.stringify(settings, undefined, 2));
 
-  // run update to create the necessary assets
+  // later use appId as a constraint
   update(null, options);
 
-  runScriptAsPromise(path.join('.nebula', 'assets', 'rebuild.sh')).then(fiber.resolve, fiber.reject);
+  var tasks = [];
 
-  Fiber.yield();
+  tasks.push(runScriptAsAsyncTask(path.join('.nebula', 'assets', 'rebuild.sh')));
 
-  if (options.buildOnly) {
-    return;
+  if (!options.buildOnly) {
+    tasks.push(runScriptAsAsyncTask(path.join('.nebula', 'assets', 'restart.sh')));
   }
 
-  runScriptAsPromise(path.join('.nebula', 'assets', 'restart.sh')).then(fiber.resolve, fiber.reject);
+  async.series(tasks, function (err) {
+    if (err) return fiber.throwInto(err);
+    fiber.run();
+  });
 
   Fiber.yield();
+
+  console.log('done');
 }
