@@ -2,6 +2,7 @@
 var Promise = require('es6-promise').Promise;
 var crypto = require('crypto');
 var spawn = require('child_process').spawn;
+var Fiber = require('fibers');
 
 module.exports = {
 
@@ -33,5 +34,18 @@ module.exports = {
       child.on('exit', resolve);
     });
   },
+
+  requireFiber: function () {
+    var fiber = Fiber.current;
+
+    if (!fiber) {
+      throw new Error('must be runned within a fiber');
+    }
+
+    fiber.reject  = function (err) { fiber.throwInto(err); };
+    fiber.resolve = function (res) { fiber.run(res); };
+
+    return fiber;
+  }
 
 }

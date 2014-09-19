@@ -1,6 +1,6 @@
 set -e
 
-for f in {{#each listOfIds}}{{this}} {{/each}}
+for f in {{#each listOfApps}}{{appId}} {{/each}}
 do
   if [ -d $f ]
   then

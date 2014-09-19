@@ -5,23 +5,21 @@ var mkdirp = require('mkdirp');
 var common = require('./common');
 var colors = require('colors');
 var Fiber = require('fibers');
+var chalk = require('chalk');
 var exec = require('child_process').exec;
 var path = require('path');
 var fs = require('fs');
 var either = common.either;
+var requireFiber = common.requireFiber;
 
-module.exports = function update (configJsonPath, prefix) {
+module.exports = function update (appId, options) {
 
-  if (!fiber) {
-    throw new Error('update must be runned within a fiber');
-  }
+  // TODO: appId is currently ignored, but it would be nice to restrict
+  //       the update routine to a given app only
 
-  var fiber = Fiber.current;
+  var fiber = requireFiber();
 
-  // TODO: use this prefix in place of hardcoded "nebula"
-  prefix = prefix || 'nebula';
-
-  var pathToConfig = path.resolve(path.join('.nebula', 'config'));
+  var pathToDeploy = path.resolve(path.join('.nebula', 'deploy'));
   var pathToSource = path.resolve(path.join('.nebula', 'source'));
   var pathToBuilds = path.resolve(path.join('.nebula', 'builds'));
   var pathToAssets = path.resolve(path.join('.nebula', 'assets')); // these files should have versions
@@ -36,40 +34,40 @@ module.exports = function update (configJsonPath, prefix) {
     };
   });
 
-  var haproxyConfigTemplate =
-    handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'haproxy.cfg')).toString('utf8'));
+  var globalScripts = [ "haproxy.cfg", "restart.sh", "rebuild.sh" ].map(function (name) {
+    return { name: name,
+      template: handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', name)).toString('utf8')),
+    };
+  });
 
-  var restartScriptTemplate =
-    handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'restart.sh')).toString('utf8'));
+  var haproxyConfigTemplate = handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'haproxy.cfg')).toString('utf8'));
+  var restartScriptTemplate = handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'restart.sh' )).toString('utf8'));
+  var rebuildScriptTemplate = handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'rebuild.sh' )).toString('utf8'));
 
-  var rebuildScriptTemplate =
-    handlebars.compile(fs.readFileSync(path.join(__dirname, 'templates', 'rebuild.sh')).toString('utf8'));
-
-  mkdirp.sync(pathToConfig);
+  mkdirp.sync(pathToDeploy);
   mkdirp.sync(pathToSource);
   mkdirp.sync(pathToAssets);
   mkdirp.sync(pathToBuilds);
 
   var configJson = { apps: [] };
+  var appsById = {};
 
   var configLock = {};
   var configLockPath = path.join(pathToAssets, 'nebula.lock');
 
-  fs.readdirSync(pathToConfig).filter(function (file) {
+  fs.readdirSync(pathToDeploy).filter(function (file) {
     return path.extname(file) === '.json';
   }).forEach(function (file) {
-    configJson.apps[path.basename(file, '.json')] = JSON.parse(fs.readFileSync(path.join(pathToConfig, file), 'utf8'));
+    var appId = path.basename(file, '.json');
+    appsById[appId] = JSON.parse(fs.readFileSync(path.join(pathToDeploy, file), 'utf8'));
   });
-
-  //if (fs.existsSync(configJsonPath)) {
-  //  configJson = JSON.parse(fs.readFileSync(configJsonPath).toString('utf8'));
-  //}
 
   if (fs.existsSync(configLockPath)) {
     configLock = JSON.parse(fs.readFileSync(configLockPath).toString('utf8'));
   }
 
-  var listOfIds = Object.keys(configJson.apps);
+  var listOfIds  = Object.keys(appsById);
+  var listOfApps = listOfIds.map(function (appId) { return appsById[appId]; });
 
   // make sure the asset repository is initialized
   if (!fs.existsSync(path.join(pathToAssets, '.git'))) {
@@ -84,20 +82,16 @@ module.exports = function update (configJsonPath, prefix) {
 
   // TODO: make sure that app names are unique
 
-
-
-  //throw new Error("LOL");
-
   Promise.all(
-    listOfIds.map(function (name) {
+    listOfIds.map(function (appId) {
       return new Promise(function (resolve, reject) {
-        var app = configJson.apps[name];
-        console.log(name.cyan + ' -> ' + app.repository.git.yellow);
-        exec('git ls-remote ' + app.repository.git, { cwd: null }, either(reject).or(function (stdout) {
+        var app = appsById[appId];
+        console.log(chalk.cyan(appId) + ' -> ' + chalk.yellow(app.repository.url));
+        exec('git ls-remote ' + app.repository.url, { cwd: null }, either(reject).or(function (stdout) {
           var match = /^([\da-f]+)\s+HEAD$/m.exec(stdout);
           if (match) {
-            configJson.apps[name].sha = match[1];
-            console.log(name.cyan + ' -> ' + match[1]);
+            appsById[appId].sha = match[1];
+            console.log(chalk.cyan(appId) + ' -> ' + match[1]);
           }
           resolve();
         }));
@@ -115,16 +109,15 @@ module.exports = function update (configJsonPath, prefix) {
 
   var lastFreePort = 3000;
 
-  listOfIds.forEach(function (id) {
-    var app = configJson.apps[id];
+  listOfIds.forEach(function (appId) {
+    var app = appsById[appId];
 
     app.port = lastFreePort++;
-    app.hash = app.id;
     app.user = process.env.USER;
 
-    app.pathToAssets = path.join(pathToAssets, id);
-    app.pathToSource = path.join(pathToSource, id);
-    app.pathToBuilds = path.join(pathToBuilds, id);
+    app.pathToAssets = path.join(pathToAssets, appId);
+    app.pathToSource = path.join(pathToSource, appId);
+    app.pathToBuilds = path.join(pathToBuilds, appId);
 
     mkdirp.sync(app.pathToAssets);
     
@@ -148,26 +141,18 @@ module.exports = function update (configJsonPath, prefix) {
   // lock file
   // fs.writeFileSync(configLockPath, JSON.stringify(configJson, undefined, 2));
 
-  // haproxy config
-  fs.writeFileSync(pathToHaproxyConfig, haproxyConfigTemplate({
-    apps: Object.keys(configJson.apps).map(function (name) { 
-      return configJson.apps[name];
-    })
-  }));
+  globalScripts.forEach(function (script) {
+    fs.writeFileSync(path.join(pathToAssets, script.name), script.template({
+      pathToHaproxyConfig : pathToHaproxyConfig,
+      listOfApps          : listOfApps,
+      listOfIds           : listOfIds,
+    }));
+    if (/\.sh/.test(script.name)) {
+      fs.chmodSync(path.join(pathToAssets, script.name), "744");
+    }
+  });
 
-  // rebuild script
-  fs.writeFileSync(pathToRebuildScript, rebuildScriptTemplate({
-    listOfIds : listOfIds
-  }));
-
-  // restart script
-  fs.writeFileSync(pathToRestartScript, restartScriptTemplate({
-    pathToHaproxyConfig : pathToHaproxyConfig,
-    listOfIds           : listOfIds
-  }));
-
-  fs.chmodSync(pathToRestartScript, "744");
-  fs.chmodSync(pathToRebuildScript, "744");
+  // commit to repository
 
   exec("git add restart.sh rebuild.sh " + listOfIds.join(' ') + " && git commit -a -m 'updated assets'",
     { cwd: pathToAssets }, function () {

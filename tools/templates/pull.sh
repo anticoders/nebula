@@ -1,6 +1,6 @@
 if [ ! -e {{pathToSource}} ];
 then
-  git clone {{git}} {{pathToSource}}
+  git clone {{repository.url}} {{pathToSource}}
 fi
 
 (

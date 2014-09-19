@@ -9,17 +9,14 @@ var common = require('./common');
 var either = common.either;
 var unicode = common.unicode;
 var randomHexString = common.randomHexString;
+var requireFiber = common.requireFiber;
 
 module.exports = function create (name) {
 
-  var fiber = Fiber.current;
-  if (!fiber) { throw new Error('createConfig must be runned within a fiber'); }
-
-  var reject = function (err) { fiber.throwInto(err); };
-  var resolve = function (res) { fiber.run(res); };
+  var fiber = requireFiber();
 
   var options = {
-    data      : { deploy: name || 'default' },
+    data      : { deployment: name || 'default' },
     transform : function (str) { return chalk.green(str); },
   };
 
@@ -27,9 +24,9 @@ module.exports = function create (name) {
   console.log(chalk.underline.magenta("General info:"));
 
   form([
-    { name: 'deploy', label: 'Deploy', placeholder: 'name of this deployment', type: 'text' },
-    { name: 'domain', label: 'Domain', placeholder: 'domain of your app',      type: 'text' },
-  ], options, either(reject).or(resolve));
+    { name: 'deployment' , label: 'Deployment', placeholder: 'name of this deployment', type: 'text' },
+    { name: 'domain'     , label: 'Domain',     placeholder: 'domain of your app',      type: 'text' },
+  ], options, either(fiber.reject).or(fiber.resolve));
 
   Fiber.yield();
 
@@ -48,7 +45,7 @@ module.exports = function create (name) {
     { name: 'password',   label: 'Password',    placeholder: '',                       type: 'password', },
 
     //{ name: 'privateKey', label: 'Private Key', placeholder: 'path to private key',    type: 'file'     },
-  ], options, either(reject).or(resolve));
+  ], options, either(fiber.reject).or(fiber.resolve));
 
   Fiber.yield();
 
@@ -57,8 +54,8 @@ module.exports = function create (name) {
   // TODO: reserve id on this server
 
   conn.on('ready', function () {
-    conn.end(); resolve();
-  }).on('error', reject).connect(options.data);
+    conn.end(); fiber.resolve();
+  }).on('error', fiber.reject).connect(options.data);
 
   Fiber.yield();
 
@@ -72,9 +69,9 @@ module.exports = function create (name) {
   console.log(chalk.underline.magenta("Repository:"));
 
   exec('git remote -v', function (err, stdout) {
-    if (err) return resolve();
+    if (err) return fiber.resolve();
     var match = /origin\s+(http[^\s]*)/m.exec(stdout);
-    resolve(match && match[1]);
+    fiber.resolve(match && match[1]);
   });
 
   options.data.repoUrl = Fiber.yield();
@@ -83,7 +80,7 @@ module.exports = function create (name) {
   form([
     { name: 'repoUrl', label: 'Url',      placeholder: 'url to your git repo', type: 'text' },
     { name: 'private', label: 'Private?', placeholder: 'yes or no',            type: 'text' },
-  ], options, either(reject).or(resolve));
+  ], options, either(fiber.reject).or(fiber.resolve));
 
   Fiber.yield();
 
@@ -91,7 +88,7 @@ module.exports = function create (name) {
     form([
       { name: 'repoUser', label: 'Repo User'     , placeholder: 'username', type: 'text' },
       { name: 'repoPass', label: 'Repo Password' , placeholder: '',         type: 'password' },
-    ], options, either(reject).or(resolve));
+    ], options, either(fiber.reject).or(fiber.resolve));
 
     Fiber.yield();
   }
@@ -104,7 +101,7 @@ module.exports = function create (name) {
   form([
     { name: 'ROOT_PATH', label: 'ROOT_PATH', placeholder: 'root path for your app', type: 'text' },
     { name: 'MONGO_URL', label: 'MONGO_URL', placeholder: 'you may leave it blank', type: 'text' },
-  ], options, either(reject).or(resolve));
+  ], options, either(fiber.reject).or(fiber.resolve));
 
   Fiber.yield();
 
@@ -114,9 +111,9 @@ module.exports = function create (name) {
 
 function clean(formData) {
 
-  var settings = { appId: formData.appId };
+  var settings = { _name: formData.deployment };
 
-  [ 'host', 'port', 'username', 'password' ].forEach(function (name) {
+  [ 'appId', 'host', 'port', 'username', 'password' ].forEach(function (name) {
     settings[name] = formData[name];
   });
 
