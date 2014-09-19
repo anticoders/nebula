@@ -1,12 +1,15 @@
 var requireFiber = require('./common').requireFiber;
 var runScriptAsAsyncTask =require('./common').runScriptAsAsyncTask;
+var randomHexString = require('./common').randomHexString;
 var Connection = require('ssh2');
 var config = require('./config');
 var update = require('./update');
 var mkdirp = require('mkdirp');
 var async = require('async');
 var Fiber = require('fibers');
+var chalk = require('chalk');
 var path = require('path');
+var form = require('./prompt');
 var yaml = require('js-yaml');
 var fs = require('fs');
 
@@ -39,24 +42,55 @@ module.exports = function deploy (name, options) {
   var conn = new Connection();
 
   conn.on('ready', function () {
+
+    var uniqueTag = randomHexString(8);
+
+    var isPassword = [
+      /^\[sudo\]\s+password/, // sudo
+      /^Password for 'https/, // github
+    ];
+
+    var isUsername = [
+      /^Username for 'https/, // github
+    ];
+
+    function matches(chunk) {
+      return function (re) {
+        return re.test(chunk);
+      }
+    }
+
     conn.shell(function (err, stream) {
       if (err) throw err; // may be unsafe
 
-      // TODO: pipe stdin if password is required
-
       stream.on('close', function () {
         conn.end();
+
       }).on('data', function (data) {
-        process.stdout.write(data);
+        var chunk = data.toString();
+
+        if (chunk.indexOf(uniqueTag) === 0) { // this was the last command
+          stream.end('exit\n');
+        } else {
+          if ( isPassword.some(matches(chunk)) ) {
+            form.input({ mask: '*', transform: chalk.green }, function (err, password) {
+              stream.stdin.write(password + '\n');
+            });
+          } else if (isUsername.some(matches(chunk))) {
+            form.input({ transform: chalk.green }, function (err, password) {
+              stream.stdin.write(password + '\n');
+            });
+          }
+          process.stdout.write(data);
+        }
       }).stderr.on('data', function(data) {
         process.stderr.write(data);
       });
 
       // get config from stdin and deploy locally
-      stream.write("cat <<EOF | nebula deploy --local --config-from -\n");
+      stream.write("cat <<EOF | nebula deploy --local --config-from - && echo \"" + uniqueTag + "\"\n");
       stream.write(JSON.stringify(settings, undefined, 2));
       stream.write('\nEOF\n');
-      stream.end('exit\n');
     });
 
   }).connect({
