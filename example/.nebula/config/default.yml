@@ -1,6 +1,7 @@
 # gears
 
 appId  : "8740315b"
+domain : "localhost"
 
 # SSH credentials
 

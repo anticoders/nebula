@@ -2,13 +2,16 @@
 cd {{pathToSource}}
 HASH=`git rev-parse --short {{sha}}`
 
-if [ ! -e .meteor ] && [ -e example/.meteor ];
+if [ ! -e .meteor ];
 then
-  echo "using example directory"
-  cd example
-else
-  echo "it does not seem to be a meteor project"
-  exit 1
+  if [ -e example/.meteor ];
+  then
+    echo "using example directory"
+    cd example
+  else
+    echo "it does not seem to be a meteor project"
+    exit 1
+  fi
 fi
 
 if [ ! -e {{pathToBuilds}}/${HASH} ];
