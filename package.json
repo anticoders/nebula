@@ -1,6 +1,6 @@
 {
   "name": "meteor-nebula",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "deploy several meteorites at once",
   "main": "index.js",
   "directories": {
