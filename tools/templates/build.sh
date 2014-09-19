@@ -36,8 +36,13 @@ then
     rm bundle.tar.gz
     echo "rename bundle -> ${HASH}"
     mv bundle ${HASH}
-    cd ${HASH}/programs/server && npm install
   )
+fi
+
+# for older releases this folder does not have to exist
+if [ -e ${HASH}/programs/server ];
+then
+  cd ${HASH}/programs/server && npm install
 fi
 
 cd {{pathToBuilds}}
