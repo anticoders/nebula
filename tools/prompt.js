@@ -16,7 +16,10 @@ module.exports = function form (fields, options, callback) {
     var field;
     index += 1;
     if (index > fields.length - 1) {
-      callback(null, formData);
+      setTimeout(function () {
+        // this has to be async!
+        callback(null, formData);
+      });
     } else {
       // use default options
       field = Object.create(options);
