@@ -41,9 +41,9 @@ then
 fi
 
 # for older releases this folder does not have to exist
-if [ -e ${HASH}/programs/server ];
+if [ -e {{pathToBuilds}}/${HASH}/programs/server ];
 then
-  cd ${HASH}/programs/server && npm install
+  cd {{pathToBuilds}}/${HASH}/programs/server && npm install
 fi
 
 cd {{pathToBuilds}}
