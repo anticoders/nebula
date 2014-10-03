@@ -40,8 +40,8 @@ then
   )
 fi
 
-# for older releases this folder does not have to exist
-if [ -e {{pathToBuilds}}/${HASH}/programs/server ];
+# for older releases this file does not exists
+if [ -e {{pathToBuilds}}/${HASH}/programs/server/package.json ];
 then
   cd {{pathToBuilds}}/${HASH}/programs/server && npm install
 fi
