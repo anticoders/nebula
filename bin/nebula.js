@@ -25,21 +25,21 @@ program
   .command("deploy [name]")
   .description("deploy project with the given config (will use `default` if name is not provided)")
   .action(wrap(function (name) {
-    deploy(name, this);
+    deploy(name, this.parent);
   }));
 
 program
   .command('config [name]')
   .description('create or show (if it already exists) project configuration file')
   .action(wrap(function (name) {
-    config(name, this);
+    config(name, this.parent);
   }));
 
 program
   .command('assets [appId]')
   .description("create server assets based on config files from ./nebula/deploy directory")
   .action(wrap(function (appId) {
-    update(appId, this);
+    update(appId, this.parent);
   }));
 
 program
