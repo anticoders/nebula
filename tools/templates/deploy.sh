@@ -10,8 +10,8 @@ if [ ! -e $HOME/.nebula ]; then
   sudo apt-get remove -y apache
   sudo apt-get install -y build-essential git haproxy nodejs mongodb curl
   # we can probably get rid of this one later on
-  sudo npm install -g meteorite
-  sudo npm install -g meteor-nebula
+  sudo npm install -g meteorite meteor-nebula
+  sudo chown {{username}}:{{username}} -R $HOME/.npm
 
   mkdir $HOME/.nebula
 fi

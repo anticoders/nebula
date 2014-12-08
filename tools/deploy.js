@@ -108,6 +108,7 @@ module.exports = function deploy (name, options) {
 
       stream.write(template({
         uniqueTag : uniqueTag,
+        username  : settings.username,
         settings  : JSON.stringify(settings, undefined, 2)
       }));
 
