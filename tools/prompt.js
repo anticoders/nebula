@@ -106,6 +106,7 @@ module.exports.input = function (options, callback) {
     showPlaceholder(placeholder, chalk.grey);
   }
 
+  // TODO: only set raw mode if we are "atty"
   process.stdin.setRawMode(true);
 
   // keypress
