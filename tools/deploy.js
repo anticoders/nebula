@@ -1,4 +1,5 @@
 var Connection = require('ssh2');
+var handlebars = require('handlebars');
 var config = require('./config');
 var update = require('./update');
 var mkdirp = require('mkdirp');
@@ -35,7 +36,7 @@ module.exports = function deploy (name, options) {
 
   var fields = [];
 
-  if (!settings.username) {
+  if (!settings.username && !options.local) {
     fields.push({ label: 'Username', name: 'username', type: 'text' });
   }
 
@@ -102,10 +103,14 @@ module.exports = function deploy (name, options) {
         process.stderr.write(data);
       });
 
-      // get config from stdin and deploy locally
-      stream.write("cat <<EOF | nebula deploy --local --config-from - || true && echo \"" + uniqueTag + "\"\n");
-      stream.write(JSON.stringify(settings, undefined, 2));
-      stream.write('\nEOF\n');
+      var pathToScriptTemplate = path.join(__dirname, 'templates', 'deploy.sh');
+      var template = handlebars.compile(fs.readFileSync(pathToScriptTemplate, 'utf8'), { noEscape: true });
+
+      stream.write(template({
+        uniqueTag : uniqueTag,
+        settings  : JSON.stringify(settings, undefined, 2)
+      }));
+
     });
 
   }).connect({
