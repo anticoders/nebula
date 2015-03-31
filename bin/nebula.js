@@ -37,7 +37,7 @@ program
 
 program
   .command('assets [appId]')
-  .description("create server assets based on config files from ./nebula/deploy directory")
+  .description("create server assets based on config files from .nebula/deploy directory")
   .action(wrap(function (appId) {
     update(appId, this.parent);
   }));
