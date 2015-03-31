@@ -2,16 +2,12 @@
 
 var pjson = require('../package.json');
 var program = require('commander');
-var update = require('../tools/update');
-var deploy = require('../tools/deploy');
-var config = require('../tools/config');
-var colors = require('colors');
+var update = require('../lib/update');
+var deploy = require('../lib/deploy');
+var config = require('../lib/config');
 var Fiber = require('fibers');
-var chalk = require('chalk');
-var form = require('../tools/prompt');
-var yaml = require('js-yaml');
 var path = require('path');
-var fs = require('fs');
+var logs = require('../lib/logs');
 
 var defaultLockFilePath = path.join(process.env.HOME, '.nebula' , 'assets' ,'nebula.lock');
 
@@ -20,6 +16,7 @@ program
   .option('-c, --config-from <path>', 'path to the config file')
   .option('-l, --local', 'deploy locally (can be used on the server)')
   .option('-b, --build-only', 'do not start any processes (useful for testing)');
+  .option('-v, --verbose', 'show more detailed logs');
 
 program
   .command("deploy [name]")
@@ -49,7 +46,9 @@ program
     console.log('this feature is not implemented yet');
   }));
 
-program.parse(process.argv)
+program.parse(process.argv);
+
+logs.setVerbose(program.verbose);
 
 function wrap(action) {
   return function () {
