@@ -20,7 +20,7 @@ program
 
 program
   .command("deploy [name]")
-  .description("deploy project with the given config (will use `default` if name is not provided)")
+  .description("deploy app using the given config (will use `default` if name is not provided)")
   .action(function (name) {
     setTimeout(function () {
       deploy(name, this.parent);
@@ -28,8 +28,8 @@ program
   });
 
 program
-  .command('config [name]')
-  .description('create or show (if it already exists) project configuration file')
+  .command('create [name]')
+  .description('create a new configuration file')
   .action(function (name) {
     setTimeout(function () {
       config(name, this.parent);
@@ -37,20 +37,11 @@ program
   });
 
 program
-  .command('assets [appId]')
-  .description("create server assets based on config files from .nebula/deploy directory")
-  .action(function (appId) {
+  .command('update [name]')
+  .description("update all app assets based on the given configuration file")
+  .action(function (name) {
     setTimeout(function () {
-      update(appId, this.parent);
-    });
-  });
-
-program
-  .command('install <name>')
-  .description("make sure that all necessary assets are installed one the specified server")
-  .action(function () {
-    setTimeout(function () {
-      console.log('this feature is not implemented yet');
+      update(name, this.parent);
     });
   });
 

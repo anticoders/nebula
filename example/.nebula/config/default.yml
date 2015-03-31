@@ -1,7 +1,7 @@
 # gears
 
-appId  : "8740315b"
-domain : "localhost"
+appName : "nebula"
+domain  : "localhost"
 
 # SSH credentials
 

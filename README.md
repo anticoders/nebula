@@ -63,3 +63,20 @@ Host name:
 Username:
 Password:
 Save creds? [Y/n]:
+
+## `nebula create [name]`
+
+Creates a new configuration file.
+
+## `nebula update [name]`
+
+Update source code and
+create meteor bundle based on the data provided
+in the corresponding configuration file.
+
+## `nebula deploy [name]`
+
+Deploy application based on the provided assets.
+
+
+
