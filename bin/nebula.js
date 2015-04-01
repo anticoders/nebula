@@ -13,17 +13,19 @@ var defaultLockFilePath = path.join(process.env.HOME, '.nebula' , 'assets' ,'neb
 
 program
   .version(pjson.version)
-  .option('-c, --config-from <path>', 'path to the config file')
-  .option('-l, --local', 'deploy locally (can be used on the server)')
-  .option('-b, --build-only', 'do not start any processes (useful for testing)')
-  .option('-v, --verbose', 'show more detailed logs')
+  .option('-B, --build-only' , 'do not respawn, only build')
+  .option('-l, --latest'     , 'fetch the latest commit')
+//  .option('-c, --commit'     , 'fetch the given commit')
+//  .option('-b, --branch'     , 'fetch the given branch')
+  .option('-v, --verbose'    , 'show more detailed logs')
 
 program
   .command("deploy [name]")
   .description("deploy app using the given config (will use `default` if name is not provided)")
   .action(function (name) {
+    var options = this.parent;
     setTimeout(function () {
-      deploy(name, this.parent);
+      deploy(name, options);
     });
   });
 
@@ -31,8 +33,9 @@ program
   .command('create [name]')
   .description('create a new configuration file')
   .action(function (name) {
+    var options = this.parent;
     setTimeout(function () {
-      config(name, this.parent);
+      config(name, options);
     });
   });
 
@@ -40,8 +43,9 @@ program
   .command('update [name]')
   .description("update all app assets based on the given configuration file")
   .action(function (name) {
+    var options = this.parent;
     setTimeout(function () {
-      update(name, this.parent);
+      update(name, options);
     });
   });
 

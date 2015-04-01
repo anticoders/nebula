@@ -69,9 +69,9 @@ restart ()
 }
 
 # Start by parsing the script options ...
-while getopts b opt
+while getopts B opt
 do case "$opt" in
-  b)  BUILD_ONLY=1;;
+  B)  BUILD_ONLY=1;;
   [?])  echo "Usage: $0 [-b]"
     exit 1;;
   esac
