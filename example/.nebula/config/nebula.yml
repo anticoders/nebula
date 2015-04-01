@@ -1,14 +1,7 @@
 # gears
 
-appName  : "nebula"
-domain   : ""
-
-# SSH credentials
-
-host     : ""
-port     : "22"
-username : ""
-password : ""
+appName : "nebula"
+domain  : "nebula.com"
 
 # repository
 
@@ -21,9 +14,24 @@ repository :
 
 environment :
 # you can add meteor settings here
-#  METEOR_SETTINGS :
-#    public:
-#      hello: world
+  METEOR_SETTINGS :
+    public:
+      hello: world
   MONGO_URL       : ""
-  ROOT_URL        : "http://"
+  ROOT_URL        : "http://nebula.com"
 
+# deployment configuration
+
+deployment:
+
+  username  : nebula
+  password  : secret
+
+  build : local
+
+  targets:
+
+    - host : 192.168.0.2
+    - host : 192.168.0.3
+    - host : 192.168.0.4
+    - host : 192.168.0.5
