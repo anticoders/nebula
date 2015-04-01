@@ -64,7 +64,7 @@ restart ()
 
   # Refresh the haproxy.cfg and restart haproxy service.
   sudo rm -f /etc/haproxy/haproxy.cfg
-  sudo cp ${ASSETS_DIR}/haproxy.cfg /etc/haproxy/haproxy.cfg
+  sudo cp ${ASSETS_DIR}/../haproxy.cfg /etc/haproxy/haproxy.cfg
   sudo service haproxy restart
 }
 
